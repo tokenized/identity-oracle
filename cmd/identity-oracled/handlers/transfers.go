@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 
@@ -19,7 +20,7 @@ type Transfers struct {
 	Config       *web.Config
 	MasterDB     *db.DB
 	Key          bitcoin.Key
-	BlockHandler *BlockHandler
+	BlockHandler *oracle.BlockHandler
 }
 
 // TransferSignature returns an approve/deny signature for a transfer receiver.
@@ -32,19 +33,48 @@ func (t *Transfers) TransferSignature(ctx context.Context, log *log.Logger, w ht
 	var requestData struct {
 		XPub     string `json:"xpub" validate:"required"`
 		Index    uint32 `json:"index" validate:"required"`
+		Contract string `json:"contract" validate:"required"`
 		AssetID  string `json:"asset_id" validate:"required"`
 		Quantity uint64 `json:"quantity" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
-		return errors.Wrap(err, "unmarshal request")
+		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	// TODO Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
+	xpub, err := bitcoin.ExtendedKeyFromStr(requestData.XPub)
+	if err != nil {
+		return translate(errors.Wrap(err, "decode xpub"))
+	}
 
-	// dbConn := t.MasterDB.Copy()
-	// defer dbConn.Close()
+	dbConn := t.MasterDB.Copy()
+	defer dbConn.Close()
 
-	// web.Respond(ctx, log, w, response, http.StatusOK)
+	// Fetch user for xpub
+	user, err := oracle.FetchUserByXPub(ctx, dbConn, xpub)
+	if err != nil {
+		return translate(errors.Wrap(err, "fetch user"))
+	}
+
+	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
+	sig, height, approved, err := oracle.ApproveTransfer(ctx, dbConn, t.BlockHandler, user,
+		requestData.Contract, requestData.AssetID, xpub, requestData.Index, requestData.Quantity)
+	if err != nil {
+		return translate(errors.Wrap(err, "approve transfer"))
+	}
+
+	response := struct {
+		Approved     bool   `json:"approved"`
+		SigAlgorithm uint32 `json:"algorithm"`
+		Sig          []byte `json:"signature"`
+		BlockHeight  uint32 `json:"block_height"`
+	}{
+		Approved:     approved,
+		SigAlgorithm: 1,
+		Sig:          sig,
+		BlockHeight:  height,
+	}
+
+	web.Respond(ctx, log, w, response, http.StatusOK)
 	return nil
 }

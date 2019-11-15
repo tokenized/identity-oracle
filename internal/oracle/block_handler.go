@@ -1,26 +1,50 @@
-package handlers
+package oracle
 
 import (
 	"bytes"
 	"context"
 	"encoding/binary"
 	"log"
+	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
+
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
 	"github.com/tokenized/smart-contract/pkg/spynode/handlers"
 	"github.com/tokenized/smart-contract/pkg/wire"
+
+	"github.com/pkg/errors"
 )
 
 type BlockHandler struct {
 	Log          *log.Logger
 	InSync       bool
+	LatestHeight uint32
 	LatestBlocks []bitcoin.Hash32
+	Lock         sync.Mutex
+}
+
+// SigHash returns the block hash to be signed against at height tip - 4
+func (bh *BlockHandler) SigHash(ctx context.Context) (bitcoin.Hash32, uint32, error) {
+	bh.Lock.Lock()
+	defer bh.Lock.Unlock()
+
+	if len(bh.LatestBlocks) < 4 {
+		return bitcoin.Hash32{}, 0, errors.New("Not enough blocks")
+	}
+
+	return bh.LatestBlocks[len(bh.LatestBlocks)-4], bh.LatestHeight - 4, nil
 }
 
 func (bh *BlockHandler) Save(ctx context.Context, dbConn *db.DB) error {
+	bh.Lock.Lock()
+	defer bh.Lock.Unlock()
+
 	var buf bytes.Buffer
+
+	if err := binary.Write(&buf, binary.LittleEndian, bh.LatestHeight); err != nil {
+		return err
+	}
 
 	if err := binary.Write(&buf, binary.LittleEndian, uint8(len(bh.LatestBlocks))); err != nil {
 		return err
@@ -38,6 +62,9 @@ func (bh *BlockHandler) Save(ctx context.Context, dbConn *db.DB) error {
 }
 
 func (bh *BlockHandler) Load(ctx context.Context, dbConn *db.DB) error {
+	bh.Lock.Lock()
+	defer bh.Lock.Unlock()
+
 	b, err := dbConn.Fetch(ctx, "blocks")
 	if err != nil {
 		if err == db.ErrNotFound {
@@ -48,6 +75,10 @@ func (bh *BlockHandler) Load(ctx context.Context, dbConn *db.DB) error {
 	}
 
 	buf := bytes.NewBuffer(b)
+
+	if err := binary.Read(buf, binary.LittleEndian, &bh.LatestHeight); err != nil {
+		return err
+	}
 
 	var count uint8
 	if err := binary.Read(buf, binary.LittleEndian, &count); err != nil {
@@ -65,15 +96,20 @@ func (bh *BlockHandler) Load(ctx context.Context, dbConn *db.DB) error {
 /************************ Implement the SpyNode Listener interface. *******************************/
 
 func (bh *BlockHandler) HandleBlock(ctx context.Context, msgType int, block *handlers.BlockMessage) error {
+	bh.Lock.Lock()
+	defer bh.Lock.Unlock()
+
 	switch msgType {
 	case handlers.ListenerMsgBlock:
 		bh.Log.Printf("New Block (%d) : %s\n", block.Height, block.Hash.String())
+		bh.LatestHeight = uint32(block.Height)
 		bh.LatestBlocks = append(bh.LatestBlocks, block.Hash)
 		if len(bh.LatestBlocks) > 10 {
 			bh.LatestBlocks = bh.LatestBlocks[len(bh.LatestBlocks)-10:]
 		}
 	case handlers.ListenerMsgBlockRevert:
 		bh.Log.Printf("Reverted Block (%d) : %s\n", block.Height, block.Hash.String())
+		bh.LatestHeight = uint32(block.Height)
 		if len(bh.LatestBlocks) > 0 {
 			if bh.LatestBlocks[len(bh.LatestBlocks)-1].Equal(&block.Hash) {
 				bh.LatestBlocks = bh.LatestBlocks[:len(bh.LatestBlocks)-1]
@@ -110,6 +146,9 @@ func (bh *BlockHandler) HandleTxState(ctx context.Context, msgType int, txid bit
 }
 
 func (bh *BlockHandler) HandleInSync(ctx context.Context) error {
+	bh.Lock.Lock()
+	defer bh.Lock.Unlock()
+
 	bh.Log.Printf("Node is in sync\n")
 	bh.InSync = true
 

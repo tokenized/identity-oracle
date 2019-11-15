@@ -2,8 +2,7 @@
 -- SQL in this section is executed when the migration is applied.
 CREATE TABLE users (
     id uuid NOT NULL,
-    entity bytes NOT NULL,
-    name TEXT,
+    entity BYTEA NOT NULL,
     jurisdiction TEXT,
     date_created TIMESTAMPTZ NOT NULL,
     date_modified TIMESTAMPTZ NOT NULL,

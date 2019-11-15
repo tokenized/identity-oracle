@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/tokenized/identity-oracle/cmd/identity-oracled/handlers"
+	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/config"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
@@ -67,7 +68,7 @@ func main() {
 	}
 	log.Printf("main : Config : %v\n", string(cfgJSON))
 
-	// -------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------
 	// SPY Node
 	logConfig := logger.NewDevelopmentConfig()
 	logConfig.Main.SetWriter(logOutput)
@@ -82,7 +83,7 @@ func main() {
 
 	ctx := logger.ContextWithLogConfig(context.Background(), logConfig)
 
-	// -------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------
 	// Signing Key
 	key, err := bitcoin.DecodeKeyString(cfg.Oracle.Key)
 	if err != nil {
@@ -136,7 +137,7 @@ func main() {
 	}
 	defer masterDB.Close()
 
-	blockHandler := &handlers.BlockHandler{Log: log}
+	blockHandler := &oracle.BlockHandler{Log: log}
 	if err := blockHandler.Load(ctx, masterDB); err != nil {
 		log.Fatalf("main : Load blocks : %v", err)
 	}

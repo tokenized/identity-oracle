@@ -6,6 +6,7 @@ import (
 
 	"github.com/tokenized/identity-oracle/cmd/oracled/handlers"
 	"github.com/tokenized/identity-oracle/internal/mid"
+	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 
@@ -14,7 +15,7 @@ import (
 
 // API returns a handler for a set of routes.
 func API(log *log.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
-	blockHandler *handlers.BlockHandler) http.Handler {
+	blockHandler *oracle.BlockHandler) http.Handler {
 
 	app := web.New(config, log, mid.RequestLogger, mid.Metrics, mid.ErrorHandler, mid.CORS)
 

@@ -5,8 +5,11 @@ import (
 	"encoding/hex"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
@@ -52,21 +55,38 @@ func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseW
 	defer span.End()
 
 	var requestData struct {
-		XPub   string              `json:"xpub" validate:"required"`
-		Entity actions.EntityField `json:"entity" validate:"required"`
+		XPub   string `json:"xpub" validate:"required"`
+		UserID string `json:"user_id" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
-		return errors.Wrap(err, "unmarshal request")
+		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
 
-	// TODO Insert xpub
+	// TODO Authenticate access to add xpub to UserID
+
+	// Insert xpub
+	xpub := &oracle.XPub{
+		ID:          uuid.New().String(),
+		UserID:      requestData.UserID,
+		DateCreated: time.Now(),
+	}
+
+	var err error
+	xpub.XPub, err = bitcoin.ExtendedKeyFromStr(requestData.XPub)
+	if err != nil {
+		return translate(errors.Wrap(err, "decode xpub"))
+	}
+
+	if err := oracle.CreateXPub(ctx, dbConn, xpub); err != nil {
+		return translate(errors.Wrap(err, "create xpub"))
+	}
 
 	response := struct {
-		Status string
+		Status string `json:"status"`
 	}{
 		Status: "Extended Public Key Added",
 	}

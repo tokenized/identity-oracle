@@ -2,9 +2,8 @@
 -- SQL in this section is executed when the migration is applied.
 CREATE TABLE xpubs (
     id uuid NOT NULL,
-    user_id uuid NOT NULL REFERENCES user (id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     xpub BYTEA NOT NULL,
-    path TEXT NOT NULL,
     date_created TIMESTAMPTZ NOT NULL
 );
 
