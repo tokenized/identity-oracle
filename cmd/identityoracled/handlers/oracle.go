@@ -7,14 +7,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
+
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
+
 	"github.com/tokenized/specification/dist/golang/actions"
 
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 )
 

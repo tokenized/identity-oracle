@@ -1,4 +1,4 @@
-package main
+package identityoracled
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/tokenized/identity-oracle/cmd/identity-oracled/handlers"
+	"github.com/tokenized/identity-oracle/cmd/identityoracled/handlers"
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/config"
 	"github.com/tokenized/identity-oracle/internal/platform/db"

@@ -22,6 +22,12 @@ func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHand
 	}
 
 	// TODO Get contract and asset
+
+	_, err = FetchUserByXPub(ctx, dbConn, xpub)
+	if err != nil {
+		return nil, 0, false, errors.Wrap(err, "fetch user")
+	}
+
 	// TODO Verify user meets criteria
 
 	contractAddress, err := bitcoin.DecodeAddress(contract)
@@ -43,6 +49,9 @@ func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHand
 	}
 
 	receiveAddress, err := addressKey.RawAddress()
+	if err != nil {
+		return nil, 0, false, errors.Wrap(err, "generate address")
+	}
 
 	sig, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, assetCode.Bytes(),
 		receiveAddress, quantity, &blockHash, 1)

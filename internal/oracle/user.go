@@ -3,12 +3,14 @@ package oracle
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
+
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
+
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -24,8 +26,8 @@ const (
 // CreateUser inserts a user into the database.
 func CreateUser(ctx context.Context, dbConn *db.DB, user *User) error {
 	sql := `INSERT
-		INTO xpubs (
-		    id
+		INTO users (
+		    id,
 		    entity,
 		    jurisdiction,
 		    date_created,
@@ -60,7 +62,7 @@ func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKe
 			xpubs
 		WHERE
 			xpubs.xpub = ?
-			xpubs.user_id=u.id`
+			AND xpubs.user_id=u.id`
 
 	user := User{}
 	err := dbConn.Get(ctx, &user, sql, xpub)

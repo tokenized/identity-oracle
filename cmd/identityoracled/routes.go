@@ -1,10 +1,10 @@
-package handlers
+package identityoracled
 
 import (
 	"log"
 	"net/http"
 
-	"github.com/tokenized/identity-oracle/cmd/oracled/handlers"
+	"github.com/tokenized/identity-oracle/cmd/identityoracled/handlers"
 	"github.com/tokenized/identity-oracle/internal/mid"
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
@@ -31,7 +31,7 @@ func API(log *log.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
 	app.Handle("GET", "/oracle/id", oh.Identity)
 	app.Handle("GET", "/oracle/register", oh.Register)
 
-	th := walletHandlers.Transfers{
+	th := handlers.Transfers{
 		Config:       config,
 		MasterDB:     masterDB,
 		Key:          key,
