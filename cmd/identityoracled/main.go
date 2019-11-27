@@ -85,7 +85,7 @@ func main() {
 
 	// ---------------------------------------------------------------------------------------------
 	// Signing Key
-	key, err := bitcoin.DecodeKeyString(cfg.Oracle.Key)
+	key, err := bitcoin.KeyFromStr(cfg.Oracle.Key)
 	if err != nil {
 		log.Fatalf("main : Reading key : %v", err)
 	}

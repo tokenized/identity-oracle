@@ -29,7 +29,8 @@ func API(log *log.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
 		// Entity: // TODO Set entity for oracle
 	}
 	app.Handle("GET", "/oracle/id", oh.Identity)
-	app.Handle("GET", "/oracle/register", oh.Register)
+	app.Handle("POST", "/oracle/register", oh.Register)
+	app.Handle("POST", "/oracle/addXPub", oh.AddXPub)
 
 	th := handlers.Transfers{
 		Config:       config,

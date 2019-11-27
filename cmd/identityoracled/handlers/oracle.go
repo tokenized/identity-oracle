@@ -15,6 +15,7 @@ import (
 
 	"github.com/tokenized/specification/dist/golang/actions"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
@@ -49,7 +50,7 @@ func (o *Oracle) Identity(ctx context.Context, log *log.Logger, w http.ResponseW
 	return nil
 }
 
-// Register adds a new xpub to the system
+// Register adds a new user to the system
 func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
@@ -57,20 +58,78 @@ func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseW
 	defer span.End()
 
 	var requestData struct {
-		XPub   string `json:"xpub" validate:"required"`
-		UserID string `json:"user_id" validate:"required"`
+		Entity       string `json:"entity" validate:"required"`     // hex protobuf
+		PublicKey    string `json:"public_key" validate:"required"` // hex compressed
+		Jurisdiction string `json:"jurisdiction"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
+	entityBytes, err := hex.DecodeString(requestData.Entity)
+	if err != nil {
+		return translate(errors.Wrap(err, "decode entity hex"))
+	}
+
+	entity := &actions.EntityField{}
+	if err := proto.Unmarshal(entityBytes, entity); err != nil {
+		return translate(errors.Wrap(err, "unmarshal entity"))
+	}
+
+	pubKey, err := bitcoin.PublicKeyFromStr(requestData.PublicKey)
+	if err != nil {
+		return translate(errors.Wrap(err, "decode public key"))
+	}
+
+	// Insert user
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
 
-	// TODO Authenticate access to add xpub to UserID
+	user := &oracle.User{
+		ID:           uuid.New().String(),
+		Entity:       entityBytes,
+		PublicKey:    pubKey,
+		Jurisdiction: requestData.Jurisdiction,
+		DateCreated:  time.Now(),
+		DateModified: time.Now(),
+		Approved:     true, // TODO Add approval step
+		IsDeleted:    false,
+	}
 
-	// Insert xpub
+	if err := oracle.CreateUser(ctx, dbConn, user); err != nil {
+		return translate(errors.Wrap(err, "create user"))
+	}
+
+	response := struct {
+		Status string `json:"status"`
+		UserID string `json:"user_id"`
+	}{
+		Status: "User Created",
+		UserID: user.ID,
+	}
+
+	web.RespondData(ctx, log, w, response, http.StatusOK)
+	return nil
+}
+
+// AddXPub adds a new xpub to the system.
+func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWriter,
+	r *http.Request, params map[string]string) error {
+
+	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.AddXPub")
+	defer span.End()
+
+	var requestData struct {
+		UserID    string `json:"user_id" validate:"required"`
+		XPub      string `json:"xpub" validate:"required"`      // hex
+		Signature string `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
+	}
+
+	if err := web.Unmarshal(r.Body, &requestData); err != nil {
+		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
 	xpub := &oracle.XPub{
 		ID:          uuid.New().String(),
 		UserID:      requestData.UserID,
@@ -83,16 +142,32 @@ func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseW
 		return translate(errors.Wrap(err, "decode xpub"))
 	}
 
+	signature, err := bitcoin.SignatureFromStr(requestData.Signature)
+	if err != nil {
+		return translate(errors.Wrap(err, "decode sig"))
+	}
+
+	hash := bitcoin.DoubleSha256([]byte(requestData.UserID + requestData.XPub))
+
+	dbConn := o.MasterDB.Copy()
+	defer dbConn.Close()
+
+	// Fetch User
+	user, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
+	if err != nil {
+		return translate(errors.Wrap(err, "fetch user"))
+	}
+
+	// Verify signature is valid for user's public key
+	if !signature.Verify(hash, user.PublicKey) {
+		return translate(errors.Wrap(err, "validate sig"))
+	}
+
+	// Insert xpub
 	if err := oracle.CreateXPub(ctx, dbConn, xpub); err != nil {
 		return translate(errors.Wrap(err, "create xpub"))
 	}
 
-	response := struct {
-		Status string `json:"status"`
-	}{
-		Status: "Extended Public Key Added",
-	}
-
-	web.RespondData(ctx, log, w, response, http.StatusOK)
+	web.Respond(ctx, log, w, nil, http.StatusOK)
 	return nil
 }

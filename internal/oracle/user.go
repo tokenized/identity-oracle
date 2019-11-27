@@ -17,9 +17,11 @@ const (
 	UserColumns = `
 		u.id,
 		u.entity,
+		u.public_key,
 		u.jurisdiction,
 		u.date_created,
 		u.date_modified,
+		u.approved,
 		u.is_deleted`
 )
 
@@ -29,12 +31,14 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user *User) error {
 		INTO users (
 		    id,
 		    entity,
+		    public_key,
 		    jurisdiction,
 		    date_created,
 		    date_modified,
+		    approved,
 		    is_deleted
 		)
-		VALUES (?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// Verify entity format
 	entity := &actions.EntityField{}
@@ -45,14 +49,28 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user *User) error {
 	if err := dbConn.Execute(ctx, sql,
 		user.ID,
 		user.Entity,
+		user.PublicKey,
 		user.Jurisdiction,
 		user.DateCreated,
 		user.DateModified,
+		user.Approved,
 		user.IsDeleted); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func FetchUser(ctx context.Context, dbConn *db.DB, id string) (User, error) {
+	sql := `SELECT ` + UserColumns + `
+		FROM
+			users u
+		WHERE
+			u.id=?`
+
+	user := User{}
+	err := dbConn.Get(ctx, &user, sql, id)
+	return user, err
 }
 
 func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKey) (User, error) {
