@@ -26,7 +26,7 @@ const (
 )
 
 // CreateUser inserts a user into the database.
-func CreateUser(ctx context.Context, dbConn *db.DB, user *User) error {
+func CreateUser(ctx context.Context, dbConn *db.DB, user User) error {
 	sql := `INSERT
 		INTO users (
 		    id,
@@ -73,7 +73,7 @@ func FetchUser(ctx context.Context, dbConn *db.DB, id string) (User, error) {
 	return user, err
 }
 
-func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKey) (User, error) {
+func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (User, error) {
 	sql := `SELECT ` + UserColumns + `
 		FROM
 			users u,

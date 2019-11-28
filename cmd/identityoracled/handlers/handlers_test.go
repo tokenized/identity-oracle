@@ -130,7 +130,7 @@ func TestAddXPub(t *testing.T) {
 		t.Fatalf("Failed to serialize user entity : %s", err)
 	}
 
-	user := &oracle.User{
+	user := oracle.User{
 		ID:           uuid.New().String(),
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),
@@ -149,13 +149,17 @@ func TestAddXPub(t *testing.T) {
 		t.Fatalf("Failed to generate xkey : %s", err)
 	}
 
+	xkeys := bitcoin.ExtendedKeys{xkey}
+
 	requestData := struct {
-		UserID    string `json:"user_id" validate:"required"`
-		XPub      string `json:"xpub" validate:"required"`      // hex
-		Signature string `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
+		UserID          string `json:"user_id" validate:"required"`
+		XPub            string `json:"xpub" validate:"required"` // hex
+		RequiredSigners int    `json:"required_signers" validate:"required"`
+		Signature       string `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
 	}{
-		UserID: user.ID,
-		XPub:   xkey.ExtendedPublicKey().String(),
+		UserID:          user.ID,
+		XPub:            xkeys.ExtendedPublicKeys().String(),
+		RequiredSigners: 1,
 	}
 
 	hash := bitcoin.DoubleSha256([]byte(user.ID + requestData.XPub))

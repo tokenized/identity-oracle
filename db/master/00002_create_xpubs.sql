@@ -4,6 +4,7 @@ CREATE TABLE xpubs (
     id uuid NOT NULL,
     user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     xpub BYTEA NOT NULL,
+    required_signers INT NOT NULL DEFAULT 1,
     date_created TIMESTAMPTZ NOT NULL
 );
 

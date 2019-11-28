@@ -32,7 +32,7 @@ func TestUsers(t *testing.T) {
 		t.Fatalf("Failed to serialize user entity : %s", err)
 	}
 
-	user := &User{
+	user := User{
 		ID:           uuid.New().String(),
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),

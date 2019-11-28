@@ -18,8 +18,9 @@ type User struct {
 }
 
 type XPub struct {
-	ID          string              `db:"id" json:"id"`
-	UserID      string              `db:"user_id" json:"user_id"`
-	XPub        bitcoin.ExtendedKey `db:"xpub" json:"xpub"`
-	DateCreated time.Time           `db:"date_created" json:"date_created"`
+	ID              string               `db:"id" json:"id"`
+	UserID          string               `db:"user_id" json:"user_id"`
+	XPub            bitcoin.ExtendedKeys `db:"xpub" json:"xpub"`
+	RequiredSigners int                  `json:"required_signers" db:"required_signers"`
+	DateCreated     time.Time            `db:"date_created" json:"date_created"`
 }

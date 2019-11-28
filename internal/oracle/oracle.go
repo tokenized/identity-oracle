@@ -13,8 +13,8 @@ import (
 )
 
 func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
-	user User, contract, asset string,
-	xpub bitcoin.ExtendedKey, index uint32, quantity uint64) ([]byte, uint32, bool, error) {
+	user User, contract, asset string, xpub bitcoin.ExtendedKeys, index uint32,
+	quantity uint64) ([]byte, uint32, bool, error) {
 
 	_, assetCode, err := protocol.DecodeAssetID(asset)
 	if err != nil {
@@ -22,6 +22,11 @@ func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHand
 	}
 
 	// TODO Get contract and asset
+
+	xpubData, err := FetchXPubByXPub(ctx, dbConn, xpub)
+	if err != nil {
+		return nil, 0, false, errors.Wrap(err, "fetch xpub")
+	}
 
 	_, err = FetchUserByXPub(ctx, dbConn, xpub)
 	if err != nil {
@@ -43,12 +48,12 @@ func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHand
 	}
 
 	// Generate address at index
-	addressKey, err := xpub.ChildKey(index)
+	addressKey, err := xpub.ChildKeys(index)
 	if err != nil {
 		return nil, 0, false, errors.Wrap(err, "generate address key")
 	}
 
-	receiveAddress, err := addressKey.RawAddress()
+	receiveAddress, err := addressKey.RawAddress(xpubData.RequiredSigners)
 	if err != nil {
 		return nil, 0, false, errors.Wrap(err, "generate address")
 	}

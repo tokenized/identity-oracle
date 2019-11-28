@@ -57,6 +57,7 @@ func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseW
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.Register")
 	defer span.End()
 
+	// TODO Add birth date
 	var requestData struct {
 		Entity       string `json:"entity" validate:"required"`     // hex protobuf
 		PublicKey    string `json:"public_key" validate:"required"` // hex compressed
@@ -86,7 +87,7 @@ func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseW
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
 
-	user := &oracle.User{
+	user := oracle.User{
 		ID:           uuid.New().String(),
 		Entity:       entityBytes,
 		PublicKey:    pubKey,
@@ -121,23 +122,25 @@ func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWr
 	defer span.End()
 
 	var requestData struct {
-		UserID    string `json:"user_id" validate:"required"`
-		XPub      string `json:"xpub" validate:"required"`      // hex
-		Signature string `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
+		UserID          string `json:"user_id" validate:"required"`
+		XPub            string `json:"xpub" validate:"required"` // hex
+		RequiredSigners int    `json:"required_signers" validate:"required"`
+		Signature       string `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	xpub := &oracle.XPub{
-		ID:          uuid.New().String(),
-		UserID:      requestData.UserID,
-		DateCreated: time.Now(),
+	xpub := oracle.XPub{
+		ID:              uuid.New().String(),
+		UserID:          requestData.UserID,
+		RequiredSigners: requestData.RequiredSigners,
+		DateCreated:     time.Now(),
 	}
 
 	var err error
-	xpub.XPub, err = bitcoin.ExtendedKeyFromStr(requestData.XPub)
+	xpub.XPub, err = bitcoin.ExtendedKeysFromStr(requestData.XPub)
 	if err != nil {
 		return translate(errors.Wrap(err, "decode xpub"))
 	}
@@ -171,3 +174,5 @@ func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWr
 	web.Respond(ctx, log, w, nil, http.StatusOK)
 	return nil
 }
+
+// TODO Change Jurisdiction?

@@ -42,7 +42,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log *log.Logger, w ht
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	xpub, err := bitcoin.ExtendedKeyFromStr(requestData.XPub)
+	xpub, err := bitcoin.ExtendedKeysFromStr(requestData.XPub)
 	if err != nil {
 		return translate(errors.Wrap(err, "decode xpub"))
 	}
