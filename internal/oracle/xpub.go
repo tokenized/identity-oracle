@@ -3,7 +3,6 @@ package oracle
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 
@@ -34,9 +33,8 @@ func CreateXPub(ctx context.Context, dbConn *db.DB, xpub XPub) error {
 			required_signers,
 			date_created
 		)
-		VALUES (?, ?, ?, ?, ?)`
-
-	fmt.Printf("Inserting xpub : %s\n", xpub.XPub.String())
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT ON CONSTRAINT xpubs_unique DO NOTHING`
 
 	if err := dbConn.Execute(ctx, sql,
 		xpub.ID,
