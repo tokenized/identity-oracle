@@ -52,13 +52,11 @@ func TestRegister(t *testing.T) {
 	}
 
 	requestData := struct {
-		Entity       string `json:"entity" validate:"required"`     // hex protobuf
-		PublicKey    string `json:"public_key" validate:"required"` // hex compressed
-		Jurisdiction string `json:"jurisdiction"`
+		Entity    string `json:"entity" validate:"required"`     // hex protobuf
+		PublicKey string `json:"public_key" validate:"required"` // hex compressed
 	}{
-		Entity:       hex.EncodeToString(entityBytes),
-		PublicKey:    hex.EncodeToString(key.PublicKey().Bytes()),
-		Jurisdiction: "AUS",
+		Entity:    hex.EncodeToString(entityBytes),
+		PublicKey: hex.EncodeToString(key.PublicKey().Bytes()),
 	}
 
 	b, err := json.Marshal(&requestData)
@@ -122,7 +120,8 @@ func TestAddXPub(t *testing.T) {
 	}
 
 	entity := actions.EntityField{
-		Name: "Test Entity Name",
+		Name:        "Test Entity Name",
+		CountryCode: "AUS",
 	}
 
 	entityBytes, err := proto.Marshal(&entity)
@@ -134,7 +133,6 @@ func TestAddXPub(t *testing.T) {
 		ID:           uuid.New().String(),
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),
-		Jurisdiction: "AUS",
 		DateCreated:  time.Now(),
 		DateModified: time.Now(),
 		IsDeleted:    false,

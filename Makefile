@@ -18,7 +18,7 @@ dist:
 	$(GO_DIST) -o dist/$(BINARY) cmd/$(BINARY)/main.go
 
 run-master:
-	go run cmd/identity-oracled/main.go
+	go run cmd/identityoracled/main.go
 
 migrate:
 	@$(GOOSE) up

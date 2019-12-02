@@ -10,7 +10,7 @@ CREATE TABLE xpubs (
 
 ALTER TABLE ONLY xpubs ADD CONSTRAINT xpubs_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY xpubs ADD CONSTRAINT xpubs_unique UNIQUE (xpub);
+ALTER TABLE ONLY xpubs ADD CONSTRAINT xpubs_unique UNIQUE (user_id, xpub);
 
 -- +goose Down
 -- SQL in this section is executed when the migration is rolled back.

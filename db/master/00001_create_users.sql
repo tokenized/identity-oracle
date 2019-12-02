@@ -4,7 +4,6 @@ CREATE TABLE users (
     id uuid NOT NULL,
     entity BYTEA NOT NULL,
     public_key BYTEA NOT NULL,
-    jurisdiction TEXT,
     date_created TIMESTAMPTZ NOT NULL,
     date_modified TIMESTAMPTZ NOT NULL,
     approved boolean NOT NULL DEFAULT false,

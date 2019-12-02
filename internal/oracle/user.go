@@ -18,7 +18,6 @@ const (
 		u.id,
 		u.entity,
 		u.public_key,
-		u.jurisdiction,
 		u.date_created,
 		u.date_modified,
 		u.approved,
@@ -32,13 +31,12 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user User) error {
 		    id,
 		    entity,
 		    public_key,
-		    jurisdiction,
 		    date_created,
 		    date_modified,
 		    approved,
 		    is_deleted
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	// Verify entity format
 	entity := &actions.EntityField{}
@@ -50,7 +48,6 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user User) error {
 		user.ID,
 		user.Entity,
 		user.PublicKey,
-		user.Jurisdiction,
 		user.DateCreated,
 		user.DateModified,
 		user.Approved,

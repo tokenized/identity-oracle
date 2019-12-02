@@ -1,4 +1,4 @@
-package identityoracled
+package main
 
 import (
 	"context"

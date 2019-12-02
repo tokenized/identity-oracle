@@ -59,9 +59,8 @@ func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseW
 
 	// TODO Add birth date
 	var requestData struct {
-		Entity       string `json:"entity" validate:"required"`     // hex protobuf
-		PublicKey    string `json:"public_key" validate:"required"` // hex compressed
-		Jurisdiction string `json:"jurisdiction"`
+		Entity    string `json:"entity" validate:"required"`     // hex protobuf
+		PublicKey string `json:"public_key" validate:"required"` // hex compressed
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
@@ -91,7 +90,6 @@ func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseW
 		ID:           uuid.New().String(),
 		Entity:       entityBytes,
 		PublicKey:    pubKey,
-		Jurisdiction: requestData.Jurisdiction,
 		DateCreated:  time.Now(),
 		DateModified: time.Now(),
 		Approved:     true, // TODO Add approval step
@@ -175,4 +173,4 @@ func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWr
 	return nil
 }
 
-// TODO Change Jurisdiction?
+// TODO Change Entity Data?

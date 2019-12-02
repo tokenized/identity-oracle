@@ -24,7 +24,8 @@ func TestUsers(t *testing.T) {
 	}
 
 	entity := actions.EntityField{
-		Name: "Test Entity Name",
+		Name:        "Test Entity Name",
+		CountryCode: "AUS",
 	}
 
 	entityBytes, err := proto.Marshal(&entity)
@@ -36,7 +37,6 @@ func TestUsers(t *testing.T) {
 		ID:           uuid.New().String(),
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),
-		Jurisdiction: "AUS",
 		DateCreated:  time.Now(),
 		DateModified: time.Now(),
 		IsDeleted:    false,

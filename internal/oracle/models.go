@@ -10,7 +10,6 @@ type User struct {
 	ID           string            `db:"id" json:"id"`
 	Entity       []byte            `db:"entity" json:"entity"`
 	PublicKey    bitcoin.PublicKey `db:"public_key" json:"public_key"`
-	Jurisdiction string            `db:"jurisdiction" json:"jurisdiction"`
 	DateCreated  time.Time         `db:"date_created" json:"date_created"`
 	DateModified time.Time         `db:"date_modified" json:"date_modified"`
 	Approved     bool              `db:"approved" json:"approved"`
