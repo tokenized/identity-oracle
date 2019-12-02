@@ -130,6 +130,18 @@ func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWr
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
+	dbConn := o.MasterDB.Copy()
+	defer dbConn.Close()
+
+	// Check user ID
+	_, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
+	if err != nil {
+		if err == db.ErrNotFound {
+			return web.ErrNotFound // User doesn't exist
+		}
+		return translate(errors.Wrap(err, "fetch user"))
+	}
+
 	xpub := oracle.XPub{
 		ID:              uuid.New().String(),
 		UserID:          requestData.UserID,
@@ -137,7 +149,6 @@ func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWr
 		DateCreated:     time.Now(),
 	}
 
-	var err error
 	xpub.XPub, err = bitcoin.ExtendedKeysFromStr(requestData.XPub)
 	if err != nil {
 		return translate(errors.Wrap(err, "decode xpub"))
@@ -149,9 +160,6 @@ func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWr
 	}
 
 	hash := bitcoin.DoubleSha256([]byte(requestData.UserID + requestData.XPub))
-
-	dbConn := o.MasterDB.Copy()
-	defer dbConn.Close()
 
 	// Fetch User
 	user, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
