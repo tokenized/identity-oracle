@@ -30,6 +30,7 @@ func API(log *log.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
 	app.Handle("GET", "/oracle/id", oh.Identity)
 	app.Handle("POST", "/oracle/register", oh.Register)
 	app.Handle("POST", "/oracle/addXPub", oh.AddXPub)
+	app.Handle("POST", "/oracle/user", oh.User)
 
 	th := handlers.Transfers{
 		Config:       config,

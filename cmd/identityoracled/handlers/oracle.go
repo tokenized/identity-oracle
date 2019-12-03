@@ -185,4 +185,46 @@ func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWr
 	return nil
 }
 
+// User returns the user id associated with an xpub.
+func (o *Oracle) User(ctx context.Context, log *log.Logger, w http.ResponseWriter,
+	r *http.Request, params map[string]string) error {
+
+	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.User")
+	defer span.End()
+
+	var requestData struct {
+		XPub string `json:"xpub" validate:"required"` // hex
+	}
+
+	if err := web.Unmarshal(r.Body, &requestData); err != nil {
+		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	xpub, err := bitcoin.ExtendedKeysFromStr(requestData.XPub)
+	if err != nil {
+		return translate(errors.Wrap(err, "decode xpub"))
+	}
+
+	dbConn := o.MasterDB.Copy()
+	defer dbConn.Close()
+
+	// Check user ID
+	userID, err := oracle.FetchUserIDByXPub(ctx, dbConn, xpub)
+	if err != nil {
+		if err == oracle.ErrXPubNotFound {
+			return web.ErrNotFound // XPub doesn't exist
+		}
+		return translate(errors.Wrap(err, "fetch user"))
+	}
+
+	response := struct {
+		UserID string `json:"user_id"`
+	}{
+		UserID: userID,
+	}
+
+	web.RespondData(ctx, log, w, response, http.StatusOK)
+	return nil
+}
+
 // TODO Change Entity Data?

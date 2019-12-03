@@ -62,3 +62,18 @@ func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKe
 	}
 	return result, err
 }
+
+func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (string, error) {
+	sql := `SELECT user_id
+		FROM
+			xpubs
+		WHERE
+			xpubs.xpub = ?`
+
+	var result string
+	err := dbConn.Get(ctx, &result, sql, xpub)
+	if err == db.ErrNotFound {
+		err = ErrXPubNotFound
+	}
+	return result, err
+}
