@@ -37,14 +37,19 @@ func (o *Oracle) Identity(ctx context.Context, log *log.Logger, w http.ResponseW
 	defer span.End()
 
 	response := struct {
-		Entity    actions.EntityField `json:"entity"`
-		URL       string              `json:"url"`
-		PublicKey string              `json:"public_key"`
+		Entity    string `json:"entity"`
+		URL       string `json:"url"`
+		PublicKey string `json:"public_key"`
 	}{
-		Entity:    o.Entity,
 		URL:       o.Config.RootURL,
 		PublicKey: hex.EncodeToString(o.Key.PublicKey().Bytes()),
 	}
+
+	entityBytes, err := proto.Marshal(&o.Entity)
+	if err != nil {
+		return errors.Wrap(err, "serialize entity")
+	}
+	response.Entity = hex.EncodeToString(entityBytes)
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)
 	return nil

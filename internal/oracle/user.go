@@ -28,13 +28,13 @@ const (
 func CreateUser(ctx context.Context, dbConn *db.DB, user User) error {
 	sql := `INSERT
 		INTO users (
-		    id,
-		    entity,
-		    public_key,
-		    date_created,
-		    date_modified,
-		    approved,
-		    is_deleted
+			id,
+			entity,
+			public_key,
+			date_created,
+			date_modified,
+			approved,
+			is_deleted
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`
 

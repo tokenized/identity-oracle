@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/hex"
 	"log"
 	"net/http"
 
@@ -66,12 +67,12 @@ func (t *Transfers) TransferSignature(ctx context.Context, log *log.Logger, w ht
 	response := struct {
 		Approved     bool   `json:"approved"`
 		SigAlgorithm uint32 `json:"algorithm"`
-		Sig          []byte `json:"signature"`
+		Sig          string `json:"signature"`
 		BlockHeight  uint32 `json:"block_height"`
 	}{
 		Approved:     approved,
 		SigAlgorithm: 1,
-		Sig:          sig,
+		Sig:          hex.EncodeToString(sig),
 		BlockHeight:  height,
 	}
 
