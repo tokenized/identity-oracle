@@ -38,6 +38,7 @@ conf/*.env.bat
 config/*.env
 conf/*.env
 conf/*.pub
+conf/*.json
 *.env
 log
 *.pem

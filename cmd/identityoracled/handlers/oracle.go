@@ -26,7 +26,6 @@ type Oracle struct {
 	Config   *web.Config
 	MasterDB *db.DB
 	Key      bitcoin.Key
-	Entity   actions.EntityField
 }
 
 // Identity returns identity information about the oracle.
@@ -45,7 +44,7 @@ func (o *Oracle) Identity(ctx context.Context, log *log.Logger, w http.ResponseW
 		PublicKey: hex.EncodeToString(o.Key.PublicKey().Bytes()),
 	}
 
-	entityBytes, err := proto.Marshal(&o.Entity)
+	entityBytes, err := proto.Marshal(&o.Config.Entity)
 	if err != nil {
 		return errors.Wrap(err, "serialize entity")
 	}

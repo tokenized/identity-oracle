@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/config"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
+	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
 	"github.com/tokenized/smart-contract/pkg/logger"
@@ -90,6 +92,25 @@ func main() {
 		log.Fatalf("main : Reading key : %v", err)
 	}
 
+	// ---------------------------------------------------------------------------------------------
+	// Entity
+
+	entityFileName := os.Getenv("ENTITY_FILE")
+	var entity actions.EntityField
+	if len(entityFileName) > 0 {
+		data, err := ioutil.ReadFile(filepath.FromSlash(entityFileName))
+		if err != nil {
+			log.Printf("Failed to read entity json file : %s\n", err)
+			return
+		}
+
+		// Put json data into opReturn struct
+		if err := json.Unmarshal(data, &entity); err != nil {
+			log.Printf("Failed to unmarshal entity json file : %s\n", err)
+			return
+		}
+	}
+
 	spyStorageConfig := storage.NewConfig(cfg.NodeStorage.Region,
 		cfg.NodeStorage.AccessKey,
 		cfg.NodeStorage.Secret,
@@ -152,6 +173,7 @@ func main() {
 		RootURL: cfg.Web.RootURL,
 		Net:     bitcoin.NetworkFromString(cfg.Bitcoin.Network),
 		IsTest:  cfg.Bitcoin.IsTest,
+		Entity:  entity,
 	}
 
 	// ---------------------------------------------------------------------------------------------

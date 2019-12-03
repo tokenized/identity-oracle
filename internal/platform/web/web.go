@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/dimfeld/httptreemux"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
@@ -36,6 +37,9 @@ type Config struct {
 
 	// The maximum number of addresses that will be reserved without being touched.
 	ReserveMax int
+
+	// Identification of oracle operator
+	Entity actions.EntityField
 }
 
 // New creates an App value that handle a set of routes for the application.

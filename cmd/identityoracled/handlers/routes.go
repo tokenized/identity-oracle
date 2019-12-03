@@ -25,7 +25,6 @@ func API(log *log.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
 		Config:   config,
 		MasterDB: masterDB,
 		Key:      key,
-		// Entity: // TODO Set entity for oracle
 	}
 	app.Handle("GET", "/oracle/id", oh.Identity)
 	app.Handle("POST", "/oracle/register", oh.Register)
