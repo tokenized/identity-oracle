@@ -40,11 +40,8 @@ type DB struct {
 // StorageConfig is geared towards "bucket" style storage, where you have a
 // specific root (the Bucket).
 type StorageConfig struct {
-	Region    string
-	AccessKey string
-	Secret    string
-	Bucket    string
-	Root      string
+	Bucket string
+	Root   string
 }
 
 // DBConfig geared towards relational database.
@@ -75,7 +72,7 @@ func New(dbc *DBConfig, sc *StorageConfig) (*DB, error) {
 	// S3 Storage
 	var store storage.Storage
 	if sc != nil {
-		storeConfig := storage.NewConfig(sc.Region, sc.AccessKey, sc.Secret, sc.Bucket, sc.Root)
+		storeConfig := storage.NewConfig(sc.Bucket, sc.Root)
 		if strings.ToLower(sc.Bucket) == "standalone" {
 			store = storage.NewFilesystemStorage(storeConfig)
 		} else {

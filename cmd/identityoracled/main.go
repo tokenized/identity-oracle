@@ -19,6 +19,7 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/config"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
+
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
@@ -111,11 +112,7 @@ func main() {
 		}
 	}
 
-	spyStorageConfig := storage.NewConfig(cfg.NodeStorage.Region,
-		cfg.NodeStorage.AccessKey,
-		cfg.NodeStorage.Secret,
-		cfg.NodeStorage.Bucket,
-		cfg.NodeStorage.Root)
+	spyStorageConfig := storage.NewConfig(cfg.NodeStorage.Bucket, cfg.NodeStorage.Root)
 
 	var spyStorage storage.Storage
 	if strings.ToLower(spyStorageConfig.Bucket) == "standalone" {
@@ -146,11 +143,8 @@ func main() {
 			URL:    cfg.Db.URL,
 		},
 		&db.StorageConfig{
-			Region:    cfg.Storage.Region,
-			AccessKey: cfg.Storage.AccessKey,
-			Secret:    cfg.Storage.Secret,
-			Bucket:    cfg.Storage.Bucket,
-			Root:      cfg.Storage.Root,
+			Bucket: cfg.Storage.Bucket,
+			Root:   cfg.Storage.Root,
 		},
 	)
 	if err != nil {
