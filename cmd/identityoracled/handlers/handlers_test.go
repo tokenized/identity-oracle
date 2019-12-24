@@ -32,9 +32,6 @@ func TestRegister(t *testing.T) {
 		Config:   test.WebConfig,
 		MasterDB: test.MasterDB,
 		Key:      oracleKey,
-		Entity: actions.EntityField{
-			Name: "Test Oracle",
-		},
 	}
 
 	key, err := bitcoin.GenerateKey(bitcoin.MainNet)
@@ -109,9 +106,6 @@ func TestAddXPub(t *testing.T) {
 		Config:   test.WebConfig,
 		MasterDB: test.MasterDB,
 		Key:      oracleKey,
-		Entity: actions.EntityField{
-			Name: "Test Oracle",
-		},
 	}
 
 	key, err := bitcoin.GenerateKey(bitcoin.MainNet)
