@@ -8,7 +8,7 @@ GO_BUILD = go build
 # command to compiling the distributable. Specify GOOS and GOARCH for the target OS.
 GO_DIST = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO_BUILD) -a -tags netgo -ldflags "-w -X main.buildVersion=$(VERSION) -X main.buildDate=$(BUILD_DATE) -X main.buildUser=$(BUILD_USER)"
 
-BINARY=identity-oracled
+BINARY=identityoracled
 
 GOOSE = goose -dir ./db/master $(DB_DRIVER) "$(DB_URL)"
 
