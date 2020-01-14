@@ -24,19 +24,20 @@ ARG GITHUB_USER
 ENV BUILD_ENV $BUILD_ENV
 ENV AWS_ACCESS_KEY_ID $AWS_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY $AWS_SECRET_ACCESS_KEY
-ENV GITHUB_USER $GITHUB_USER
+#ENV GITHUB_USER $GITHUB_USER
+ENV GO111MODULE on
 
 # this is required so we can clone nexus-api , which is private
-RUN git config --global --add url."https://$GITHUB_USER:@github.com/".insteadOf "https://github.com/"
+#RUN git config --global --add url."https://$GITHUB_USER:@github.com/".insteadOf "https://github.com/"
 
-RUN git clone --single-branch --branch $DEPENDENCY_BRANCH https://github.com/tokenized/specification.git ../specification && \
-    git clone --single-branch --branch $DEPENDENCY_BRANCH https://github.com/tokenized/envelope.git ../envelope && \
-    git clone --single-branch --branch $DEPENDENCY_BRANCH https://github.com/tokenized/smart-contract.git ../smart-contract 
+#RUN git clone --single-branch --branch $DEPENDENCY_BRANCH https://github.com/tokenized/specification.git ../specification && \
+#    git clone --single-branch --branch $DEPENDENCY_BRANCH https://github.com/tokenized/envelope.git ../envelope && \
+#    git clone --single-branch --branch $DEPENDENCY_BRANCH https://github.com/tokenized/smart-contract.git ../smart-contract 
     
-RUN git clone --single-branch --branch $DEPENDENCY_BRANCH https://github.com/tokenized/nexus-api.git ../nexus-api
+#RUN git clone --single-branch --branch $DEPENDENCY_BRANCH https://github.com/tokenized/nexus-api.git ../nexus-api
 
-RUN make deps
-
+#RUN make deps
+RUN go get ./...
 RUN make dist 
 
 
