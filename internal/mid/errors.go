@@ -2,11 +2,11 @@ package mid
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/tokenized/identity-oracle/internal/platform/web"
+	"github.com/tokenized/smart-contract/pkg/logger"
 
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
@@ -16,7 +16,7 @@ import (
 func ErrorHandler(next web.Handler) web.Handler {
 
 	// Create the handler that will be attached in the middleware chain.
-	h := func(ctx context.Context, log *log.Logger, w http.ResponseWriter, r *http.Request, params map[string]string) error {
+	h := func(ctx context.Context, log logger.Logger, w http.ResponseWriter, r *http.Request, params map[string]string) error {
 		ctx, span := trace.StartSpan(ctx, "internal.mid.ErrorHandler")
 		defer span.End()
 

@@ -2,10 +2,10 @@ package web
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/tokenized/smart-contract/pkg/json"
+	"github.com/tokenized/smart-contract/pkg/logger"
 
 	"github.com/pkg/errors"
 )
@@ -49,7 +49,7 @@ type JSONErrorMeta struct {
 }
 
 // Error handles all error responses for the API.
-func Error(cxt context.Context, log *log.Logger, w http.ResponseWriter, err error) {
+func Error(cxt context.Context, log logger.Logger, w http.ResponseWriter, err error) {
 	switch errors.Cause(err) {
 	case ErrNotHealthy:
 		RespondError(cxt, log, w, err, http.StatusInternalServerError)
@@ -91,7 +91,7 @@ func Error(cxt context.Context, log *log.Logger, w http.ResponseWriter, err erro
 }
 
 // RespondError sends JSON describing the error
-func RespondError(ctx context.Context, log *log.Logger, w http.ResponseWriter, err error, code int) {
+func RespondError(ctx context.Context, log logger.Logger, w http.ResponseWriter, err error, code int) {
 	v := JSONErrors{
 		Errors: []JSONError{{
 			Detail: err.Error(),
@@ -103,7 +103,7 @@ func RespondError(ctx context.Context, log *log.Logger, w http.ResponseWriter, e
 
 // Respond sends JSON to the client.
 // If code is StatusNoContent, v is expected to be nil.
-func Respond(ctx context.Context, log *log.Logger, w http.ResponseWriter, data interface{}, code int) {
+func Respond(ctx context.Context, log logger.Logger, w http.ResponseWriter, data interface{}, code int) {
 
 	// Set the status code for the request logger middleware.
 	v := ctx.Value(KeyValues).(*Values)
@@ -139,14 +139,14 @@ func Respond(ctx context.Context, log *log.Logger, w http.ResponseWriter, data i
 }
 
 // Respond with a location set
-func RespondRedirect(ctx context.Context, log *log.Logger, w http.ResponseWriter, data interface{}, location string, code int) {
+func RespondRedirect(ctx context.Context, log logger.Logger, w http.ResponseWriter, data interface{}, location string, code int) {
 	w.Header().Set("Location", location)
 
 	Respond(ctx, log, w, data, code)
 }
 
 // Respond using a standard RESTful response against the JSON API spec.
-func RespondData(ctx context.Context, log *log.Logger, w http.ResponseWriter, data interface{}, code int) {
+func RespondData(ctx context.Context, log logger.Logger, w http.ResponseWriter, data interface{}, code int) {
 	rData := struct {
 		Data interface{} `json:"data"`
 	}{
@@ -157,7 +157,7 @@ func RespondData(ctx context.Context, log *log.Logger, w http.ResponseWriter, da
 }
 
 // Respond with plaintext such as HTML
-func RespondHTML(ctx context.Context, log *log.Logger, w http.ResponseWriter, content string, code int) {
+func RespondHTML(ctx context.Context, log logger.Logger, w http.ResponseWriter, content string, code int) {
 
 	// Set the status code for the request logger middleware.
 	v := ctx.Value(KeyValues).(*Values)

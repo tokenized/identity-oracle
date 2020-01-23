@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/hex"
-	"log"
 	"net/http"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/smart-contract/pkg/logger"
 
 	"github.com/tokenized/specification/dist/golang/actions"
 
@@ -29,7 +29,7 @@ type Oracle struct {
 }
 
 // Identity returns identity information about the oracle.
-func (o *Oracle) Identity(ctx context.Context, log *log.Logger, w http.ResponseWriter,
+func (o *Oracle) Identity(ctx context.Context, log logger.Logger, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.Identity")
@@ -55,7 +55,7 @@ func (o *Oracle) Identity(ctx context.Context, log *log.Logger, w http.ResponseW
 }
 
 // Register adds a new user to the system
-func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseWriter,
+func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.Register")
@@ -117,7 +117,7 @@ func (o *Oracle) Register(ctx context.Context, log *log.Logger, w http.ResponseW
 }
 
 // AddXPub adds a new xpub to the system.
-func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWriter,
+func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.AddXPub")
@@ -186,7 +186,7 @@ func (o *Oracle) AddXPub(ctx context.Context, log *log.Logger, w http.ResponseWr
 }
 
 // User returns the user id associated with an xpub.
-func (o *Oracle) User(ctx context.Context, log *log.Logger, w http.ResponseWriter,
+func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.User")

@@ -17,7 +17,7 @@ GOOSE = goose -dir ./db/master $(DB_DRIVER) "$(DB_URL)"
 dist:
 	$(GO_DIST) -o dist/$(BINARY) cmd/$(BINARY)/main.go
 
-run-master:
+run:
 	go run cmd/identityoracled/main.go
 
 migrate:

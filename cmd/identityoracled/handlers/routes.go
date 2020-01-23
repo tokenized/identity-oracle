@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/tokenized/identity-oracle/internal/mid"
@@ -10,10 +9,11 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/smart-contract/pkg/logger"
 )
 
 // API returns a handler for a set of routes.
-func API(log *log.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
+func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
 	blockHandler *oracle.BlockHandler) http.Handler {
 
 	app := web.New(config, log, mid.RequestLogger, mid.Metrics, mid.ErrorHandler, mid.CORS)

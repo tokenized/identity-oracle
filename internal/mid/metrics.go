@@ -3,11 +3,11 @@ package mid
 import (
 	"context"
 	"expvar"
-	"log"
 	"net/http"
 	"runtime"
 
 	"github.com/tokenized/identity-oracle/internal/platform/web"
+	"github.com/tokenized/smart-contract/pkg/logger"
 
 	"go.opencensus.io/trace"
 )
@@ -27,7 +27,7 @@ var m = struct {
 func Metrics(next web.Handler) web.Handler {
 
 	// Wrap this handler around the next one provided.
-	h := func(ctx context.Context, log *log.Logger, w http.ResponseWriter, r *http.Request, params map[string]string) error {
+	h := func(ctx context.Context, log logger.Logger, w http.ResponseWriter, r *http.Request, params map[string]string) error {
 		ctx, span := trace.StartSpan(ctx, "internal.mid.Metrics")
 		defer span.End()
 

@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/hex"
-	"log"
 	"net/http"
 
 	"github.com/tokenized/identity-oracle/internal/oracle"
@@ -11,6 +10,7 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/smart-contract/pkg/logger"
 
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
@@ -25,7 +25,7 @@ type Transfers struct {
 }
 
 // TransferSignature returns an approve/deny signature for a transfer receiver.
-func (t *Transfers) TransferSignature(ctx context.Context, log *log.Logger, w http.ResponseWriter,
+func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Transfers.TransferSignature")

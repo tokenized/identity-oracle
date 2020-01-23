@@ -2,11 +2,11 @@ package web
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/smart-contract/pkg/logger"
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/dimfeld/httptreemux"
@@ -16,7 +16,7 @@ import (
 
 // A Handler is a type that handles a HTTP request within our own little mini
 // framework.
-type Handler func(ctx context.Context, log *log.Logger, w http.ResponseWriter, r *http.Request,
+type Handler func(ctx context.Context, log logger.Logger, w http.ResponseWriter, r *http.Request,
 	params map[string]string) error
 
 // App is the entrypoint into our application and what configures our context
@@ -25,7 +25,7 @@ type Handler func(ctx context.Context, log *log.Logger, w http.ResponseWriter, r
 type App struct {
 	*httptreemux.TreeMux
 	config *Config
-	log    *log.Logger
+	log    logger.Logger
 	mw     []Middleware
 }
 
@@ -43,7 +43,7 @@ type Config struct {
 }
 
 // New creates an App value that handle a set of routes for the application.
-func New(config *Config, log *log.Logger, mw ...Middleware) *App {
+func New(config *Config, log logger.Logger, mw ...Middleware) *App {
 	return &App{
 		TreeMux: httptreemux.New(),
 		config:  config,

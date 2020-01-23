@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,20 +32,34 @@ func main() {
 
 	// ---------------------------------------------------------------------------------------------
 	// Logging
-	var logOutput io.Writer = os.Stdout
+
+	var logConfig *logger.Config
+	if strings.ToUpper(os.Getenv("DEVELOPMENT")) == "TRUE" {
+		logConfig = logger.NewDevelopmentConfig()
+	} else {
+		logConfig = logger.NewProductionConfig()
+	}
 
 	logFileName := os.Getenv("LOG_FILE_PATH")
 	if len(logFileName) > 0 {
-		logFileName := filepath.FromSlash(logFileName)
-		logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-		if err != nil {
-			fmt.Printf("Failed to open log file : %s\n", err)
+		if err := logConfig.Main.AddFile(logFileName); err != nil {
+			fmt.Printf("Failed to Address log file : %s\n", err)
 			return
 		}
-		logOutput = io.MultiWriter(logOutput, logFile)
+	}
+	logConfig.Main.Format |= logger.IncludeSystem
+
+	if strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT" {
+		logConfig.IsText = true
 	}
 
-	log := log.New(logOutput, "API : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+	logConfig.EnableSubSystem(spynode.SubSystem)
+	if strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT" {
+		logConfig.IsText = true
+	}
+	ctx := logger.ContextWithLogConfig(context.Background(), logConfig)
+
+	log := logger.NewLoggerObject(ctx)
 
 	// ---------------------------------------------------------------------------------------------
 	// Config
@@ -70,21 +82,6 @@ func main() {
 		log.Fatalf("main : Marshalling Config to JSON : %v", err)
 	}
 	log.Printf("main : Config : %v\n", string(cfgJSON))
-
-	// ---------------------------------------------------------------------------------------------
-	// SPY Node
-	logConfig := logger.NewDevelopmentConfig()
-	logConfig.Main.SetWriter(logOutput)
-	logConfig.Main.Format |= logger.IncludeSystem | logger.IncludeMicro
-	logConfig.Main.MinLevel = logger.LevelDebug
-
-	// Configure spynode logs
-	logConfig.SubSystems[spynode.SubSystem] = logger.NewDevelopmentSystemConfig()
-	logConfig.SubSystems[spynode.SubSystem].Format |= logger.IncludeSystem | logger.IncludeMicro
-	logConfig.SubSystems[spynode.SubSystem].MinLevel = logger.LevelVerbose
-	logConfig.SubSystems[spynode.SubSystem].SetWriter(logOutput)
-
-	ctx := logger.ContextWithLogConfig(context.Background(), logConfig)
 
 	// ---------------------------------------------------------------------------------------------
 	// Signing Key
@@ -112,6 +109,8 @@ func main() {
 		}
 	}
 
+	// ---------------------------------------------------------------------------------------------
+	// SPY Node
 	spyStorageConfig := storage.NewConfig(cfg.NodeStorage.Bucket, cfg.NodeStorage.Root)
 
 	var spyStorage storage.Storage

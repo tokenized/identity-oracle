@@ -2,11 +2,11 @@ package mid
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/tokenized/identity-oracle/internal/platform/web"
+	"github.com/tokenized/smart-contract/pkg/logger"
 
 	"go.opencensus.io/trace"
 )
@@ -16,7 +16,7 @@ import (
 func RequestLogger(next web.Handler) web.Handler {
 
 	// Wrap this handler around the next one provided.
-	h := func(ctx context.Context, log *log.Logger, w http.ResponseWriter, r *http.Request, params map[string]string) error {
+	h := func(ctx context.Context, log logger.Logger, w http.ResponseWriter, r *http.Request, params map[string]string) error {
 		ctx, span := trace.StartSpan(ctx, "internal.mid.RequestLogger")
 		defer span.End()
 
