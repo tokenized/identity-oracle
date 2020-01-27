@@ -11,8 +11,8 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.3.0
 	github.com/pkg/errors v0.8.1
-	github.com/tokenized/smart-contract v0.2.2-0.20200105215152-0ca6d7ce006b
-	github.com/tokenized/specification v0.2.2-0.20191219061451-ecd0fc17c3ca
+	github.com/tokenized/smart-contract v0.2.3-0.20200124054711-8cb62a49eb13
+	github.com/tokenized/specification v0.2.3-0.20200124041515-33ed8f606b08
 	go.opencensus.io v0.22.2
 	gopkg.in/go-playground/validator.v8 v8.18.2
 )
