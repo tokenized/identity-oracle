@@ -1,0 +1,37 @@
+post:
+  tags: [transfer]
+  summary: Requests a user id associated with a specified xpub.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            xpub:
+              type: string
+            index:
+              type: number
+            contract:
+              type: string
+            asset_id:
+              type: string
+            quantity:
+              type: number
+
+  responses:
+    200:
+      description: Successful operation
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              approved:
+                type: boolean
+              algorithm:
+                type: number
+              signature:
+                type: string
+              block_height:
+                type: number
