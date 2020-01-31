@@ -21,7 +21,7 @@ import (
 	"go.opencensus.io/trace"
 )
 
-// Oracle provides support for orchestration health checks.
+// Oracle provides support for identity checks.
 type Oracle struct {
 	Config   *web.Config
 	MasterDB *db.DB

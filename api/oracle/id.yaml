@@ -1,0 +1,18 @@
+get:
+  tags: [oracle]
+  summary: Get identifying information about an identity oracle.
+
+  responses:
+    200:
+      description: Successful operation
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              entity:
+                type: string
+              url:
+                type: string
+              public_key:
+                type: string

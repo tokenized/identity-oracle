@@ -1,0 +1,29 @@
+post:
+  tags: [oracle]
+  summary: Creates a new user id.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            entity:
+              type: string
+            public_key:
+              type: string
+
+  responses:
+    200:
+      description: Successful operation
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "User Created"
+              user_id:
+                type: string
+                example: "9706702a-ee87-4b14-ac29-7cc56abfe5db"

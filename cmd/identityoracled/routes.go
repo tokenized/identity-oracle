@@ -40,5 +40,8 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 	}
 	app.Handle("POST", "/transfer/approve", th.TransferSignature)
 
+	h := handlers.Health{}
+	app.Handle("GET", "/health", h.Health)
+
 	return app
 }
