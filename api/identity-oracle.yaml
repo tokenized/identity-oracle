@@ -21,6 +21,9 @@ tags:
   - name: transfer
     description: Transfer related actions
 
+  - name: identity
+    description: Identity/Entity related actions
+
 paths:
   # Index
   /health:
@@ -44,3 +47,9 @@ paths:
   # Transfer
   /transfer/approve:
     $ref: "./transfer/approve.yaml"
+
+  # Identity
+  /identity/verifyPubKey:
+    $ref: "./identity/verify_pub_key.yaml"
+  /identity/verifyXPub:
+    $ref: "./identity/verify_xpub.yaml"

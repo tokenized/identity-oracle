@@ -13,7 +13,7 @@ import (
 )
 
 func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
-	user User, contract, asset string, xpub bitcoin.ExtendedKeys, index uint32,
+	contract, asset string, xpub bitcoin.ExtendedKeys, index uint32,
 	quantity uint64) ([]byte, uint32, bool, error) {
 
 	_, assetCode, err := protocol.DecodeAssetID(asset)
@@ -58,11 +58,11 @@ func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHand
 		return nil, 0, false, errors.Wrap(err, "generate address")
 	}
 
-	sig, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, assetCode.Bytes(),
+	sigHash, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, assetCode.Bytes(),
 		receiveAddress, quantity, &blockHash, 1)
 	if err != nil {
 		return nil, 0, false, errors.Wrap(err, "generate signature")
 	}
 
-	return sig, height, true, nil
+	return sigHash, height, true, nil
 }
