@@ -12,7 +12,7 @@ require (
 	github.com/lib/pq v1.3.0
 	github.com/pkg/errors v0.8.1
 	github.com/tokenized/smart-contract v0.2.3-0.20200124054711-8cb62a49eb13
-	github.com/tokenized/specification v0.2.3-0.20200124041515-33ed8f606b08
+	github.com/tokenized/specification v0.2.3-0.20200202201119-e0805f8cc0c1
 	go.opencensus.io v0.22.2
 	gopkg.in/go-playground/validator.v8 v8.18.2
 )
