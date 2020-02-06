@@ -51,17 +51,16 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	dbConn := t.MasterDB.Copy()
 	defer dbConn.Close()
 
-	// Fetch user for xpub
-	user, err := oracle.FetchUserByXPub(ctx, dbConn, xpub)
-	if err != nil {
-		return translate(errors.Wrap(err, "fetch user"))
-	}
-
 	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
-	sig, height, approved, err := oracle.ApproveTransfer(ctx, dbConn, t.BlockHandler, user,
+	sigHash, height, approved, err := oracle.ApproveTransfer(ctx, dbConn, t.BlockHandler,
 		requestData.Contract, requestData.AssetID, xpub, requestData.Index, requestData.Quantity)
 	if err != nil {
 		return translate(errors.Wrap(err, "approve transfer"))
+	}
+
+	sig, err := t.Key.Sign(sigHash[:])
+	if err != nil {
+		return translate(errors.Wrap(err, "sign"))
 	}
 
 	response := struct {
@@ -72,7 +71,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	}{
 		Approved:     approved,
 		SigAlgorithm: 1,
-		Sig:          hex.EncodeToString(sig),
+		Sig:          hex.EncodeToString(sig.Bytes()),
 		BlockHeight:  height,
 	}
 

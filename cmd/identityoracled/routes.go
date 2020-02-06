@@ -22,6 +22,9 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 	// Register OPTIONS fallback handler for preflight requests.
 	app.HandleOptions(mid.CORSHandler)
 
+	hh := handlers.Health{}
+	app.Handle("GET", "/health", hh.Health)
+
 	oh := handlers.Oracle{
 		Config:   config,
 		MasterDB: masterDB,
@@ -40,8 +43,14 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 	}
 	app.Handle("POST", "/transfer/approve", th.TransferSignature)
 
-	h := handlers.Health{}
-	app.Handle("GET", "/health", h.Health)
+	vh := handlers.Verify{
+		Config:       config,
+		MasterDB:     masterDB,
+		Key:          key,
+		BlockHandler: blockHandler,
+	}
+	app.Handle("POST", "/identity/verifyPubKey", vh.PubKeySignature)
+	app.Handle("POST", "/identity/verifyXPub", vh.XPubSignature)
 
 	return app
 }
