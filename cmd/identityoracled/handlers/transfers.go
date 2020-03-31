@@ -75,6 +75,6 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		BlockHeight:  height,
 	}
 
-	web.Respond(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, log, w, response, http.StatusOK)
 	return nil
 }

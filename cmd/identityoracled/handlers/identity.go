@@ -87,7 +87,7 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 		BlockHeight:  height,
 	}
 
-	web.Respond(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, log, w, response, http.StatusOK)
 	return nil
 }
 
@@ -150,6 +150,6 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 		BlockHeight:  height,
 	}
 
-	web.Respond(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, log, w, response, http.StatusOK)
 	return nil
 }
