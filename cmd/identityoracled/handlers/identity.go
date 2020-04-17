@@ -37,7 +37,7 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 
 	var requestData struct {
 		XPub   string `json:"xpub" validate:"required"`
-		Index  uint32 `json:"index" validate:"required"`
+		Index  uint32 `json:"index"`
 		Entity string `json:"entity" validate:"required"`
 	}
 
@@ -101,7 +101,7 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 
 	var requestData struct {
 		XPub   string `json:"xpub" validate:"required"`
-		Index  uint32 `json:"index" validate:"required"`
+		Index  uint32 `json:"index"`
 		Entity string `json:"entity" validate:"required"`
 	}
 

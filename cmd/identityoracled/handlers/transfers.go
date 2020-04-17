@@ -33,10 +33,10 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 
 	var requestData struct {
 		XPub     string `json:"xpub" validate:"required"`
-		Index    uint32 `json:"index" validate:"required"`
+		Index    uint32 `json:"index"`
 		Contract string `json:"contract" validate:"required"`
 		AssetID  string `json:"asset_id" validate:"required"`
-		Quantity uint64 `json:"quantity" validate:"required"`
+		Quantity uint64 `json:"quantity"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
