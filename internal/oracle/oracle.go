@@ -14,55 +14,55 @@ import (
 
 func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
 	contract, asset string, xpub bitcoin.ExtendedKeys, index uint32,
-	quantity uint64) ([]byte, uint32, bool, error) {
+	quantity uint64) ([]byte, uint32, bitcoin.Hash32, bool, error) {
 
 	_, assetCode, err := protocol.DecodeAssetID(asset)
 	if err != nil {
-		return nil, 0, false, errors.Wrap(err, "decode asset id")
+		return nil, 0, bitcoin.Hash32{}, false, errors.Wrap(err, "decode asset id")
 	}
 
 	// TODO Get contract and asset
 
 	xpubData, err := FetchXPubByXPub(ctx, dbConn, xpub)
 	if err != nil {
-		return nil, 0, false, errors.Wrap(err, "fetch xpub")
+		return nil, 0, bitcoin.Hash32{}, false, errors.Wrap(err, "fetch xpub")
 	}
 
 	_, err = FetchUserByXPub(ctx, dbConn, xpub)
 	if err != nil {
-		return nil, 0, false, errors.Wrap(err, "fetch user")
+		return nil, 0, bitcoin.Hash32{}, false, errors.Wrap(err, "fetch user")
 	}
 
 	// TODO Verify user meets criteria
 
 	contractAddress, err := bitcoin.DecodeAddress(contract)
 	if err != nil {
-		return nil, 0, false, errors.Wrap(err, "decode contract address")
+		return nil, 0, bitcoin.Hash32{}, false, errors.Wrap(err, "decode contract address")
 	}
 	contractRawAddress := bitcoin.NewRawAddressFromAddress(contractAddress)
 
 	// Get block hash for tip - 4
 	blockHash, height, err := blockHandler.SigHash(ctx)
 	if err != nil {
-		return nil, 0, false, errors.Wrap(err, "get sig block hash")
+		return nil, 0, bitcoin.Hash32{}, false, errors.Wrap(err, "get sig block hash")
 	}
 
 	// Generate address at index
 	addressKey, err := xpub.ChildKeys(index)
 	if err != nil {
-		return nil, 0, false, errors.Wrap(err, "generate address key")
+		return nil, 0, bitcoin.Hash32{}, false, errors.Wrap(err, "generate address key")
 	}
 
 	receiveAddress, err := addressKey.RawAddress(xpubData.RequiredSigners)
 	if err != nil {
-		return nil, 0, false, errors.Wrap(err, "generate address")
+		return nil, 0, bitcoin.Hash32{}, false, errors.Wrap(err, "generate address")
 	}
 
 	sigHash, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, assetCode.Bytes(),
 		receiveAddress, quantity, &blockHash, 1)
 	if err != nil {
-		return nil, 0, false, errors.Wrap(err, "generate signature")
+		return nil, 0, bitcoin.Hash32{}, false, errors.Wrap(err, "generate signature")
 	}
 
-	return sigHash, height, true, nil
+	return sigHash, height, blockHash, true, nil
 }

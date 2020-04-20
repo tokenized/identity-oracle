@@ -11,7 +11,7 @@ post:
             xpub:
               type: string
             entity:
-              type: string
+              $ref: "#/components/schemas/Entity"
 
   responses:
     200:

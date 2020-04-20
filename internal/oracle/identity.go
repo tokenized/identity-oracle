@@ -15,9 +15,9 @@ import (
 )
 
 func VerifyPubKey(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
-	entity *actions.EntityField, xpub bitcoin.ExtendedKeys, index uint32) ([]byte, uint32, bool, error) {
+	entity *actions.EntityField, xpub bitcoin.ExtendedKey, index uint32) ([]byte, uint32, bool, error) {
 
-	user, err := FetchUserByXPub(ctx, dbConn, xpub)
+	user, err := FetchUserByXPub(ctx, dbConn, bitcoin.ExtendedKeys{xpub})
 	if err != nil {
 		return nil, 0, false, errors.Wrap(err, "fetch user")
 	}
@@ -40,16 +40,12 @@ func VerifyPubKey(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler
 	}
 
 	// Generate public key at index
-	xpubKeys, err := xpub.ChildKeys(index)
+	xpubKey, err := xpub.ChildKey(index)
 	if err != nil {
 		return nil, 0, false, errors.Wrap(err, "generate public key")
 	}
 
-	if len(xpubKeys) > 1 {
-		return nil, 0, false, errors.Wrap(err, "multi-key not supported")
-	}
-
-	pubKey := xpubKeys[0].PublicKey()
+	pubKey := xpubKey.PublicKey()
 
 	sig, err := protocol.EntityPubKeyOracleSigHash(ctx, entity, pubKey, &blockHash, approve)
 	if err != nil {

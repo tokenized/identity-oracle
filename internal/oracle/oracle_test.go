@@ -96,11 +96,11 @@ func TestXPub(t *testing.T) {
 	xpubs := bitcoin.ExtendedKeys{xp}
 
 	xpub := XPub{
-		ID: uuid.New().String(),
-		UserID: user.ID,
-		XPub: xpubs,
+		ID:              uuid.New().String(),
+		UserID:          user.ID,
+		XPub:            xpubs,
 		RequiredSigners: 1,
-		DateCreated: time.Now(),
+		DateCreated:     time.Now(),
 	}
 
 	if err := CreateXPub(ctx, test.MasterDB, xpub); err != nil {

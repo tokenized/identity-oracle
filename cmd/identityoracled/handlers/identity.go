@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/hex"
 	"net/http"
 
 	"github.com/tokenized/identity-oracle/internal/oracle"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/tokenized/specification/dist/golang/actions"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 )
@@ -36,36 +34,21 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 	defer span.End()
 
 	var requestData struct {
-		XPub   string `json:"xpub" validate:"required"`
-		Index  uint32 `json:"index"`
-		Entity string `json:"entity" validate:"required"`
+		XPub   bitcoin.ExtendedKey `json:"xpub" validate:"required"`
+		Index  uint32              `json:"index" validate:"required"`
+		Entity actions.EntityField `json:"entity" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	xpub, err := bitcoin.ExtendedKeysFromStr(requestData.XPub)
-	if err != nil {
-		return translate(errors.Wrap(err, "decode xpub"))
-	}
-
-	entityBytes, err := hex.DecodeString(requestData.Entity)
-	if err != nil {
-		return translate(errors.Wrap(err, "decode entity hex"))
-	}
-
-	entity := &actions.EntityField{}
-	if err := proto.Unmarshal(entityBytes, entity); err != nil {
-		return translate(errors.Wrap(err, "unmarshal entity"))
-	}
-
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
 
 	// Verify that the public key is associated with the entity.
-	sigHash, height, approved, err := oracle.VerifyPubKey(ctx, dbConn, v.BlockHandler, entity, xpub,
-		requestData.Index)
+	sigHash, height, approved, err := oracle.VerifyPubKey(ctx, dbConn, v.BlockHandler,
+		&requestData.Entity, requestData.XPub, requestData.Index)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify pub key"))
 	}
@@ -76,14 +59,14 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 	}
 
 	response := struct {
-		Approved     bool   `json:"approved"`
-		SigAlgorithm uint32 `json:"algorithm"`
-		Sig          string `json:"signature"`
-		BlockHeight  uint32 `json:"block_height"`
+		Approved     bool              `json:"approved"`
+		SigAlgorithm uint32            `json:"algorithm"`
+		Signature    bitcoin.Signature `json:"signature"`
+		BlockHeight  uint32            `json:"block_height"`
 	}{
 		Approved:     approved,
 		SigAlgorithm: 1,
-		Sig:          hex.EncodeToString(sig.Bytes()),
+		Signature:    sig,
 		BlockHeight:  height,
 	}
 
@@ -100,35 +83,20 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 	defer span.End()
 
 	var requestData struct {
-		XPub   string `json:"xpub" validate:"required"`
-		Index  uint32 `json:"index"`
-		Entity string `json:"entity" validate:"required"`
+		XPubs  bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
+		Entity actions.EntityField  `json:"entity" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	xpub, err := bitcoin.ExtendedKeysFromStr(requestData.XPub)
-	if err != nil {
-		return translate(errors.Wrap(err, "decode xpub"))
-	}
-
-	entityBytes, err := hex.DecodeString(requestData.Entity)
-	if err != nil {
-		return translate(errors.Wrap(err, "decode entity hex"))
-	}
-
-	entity := &actions.EntityField{}
-	if err := proto.Unmarshal(entityBytes, entity); err != nil {
-		return translate(errors.Wrap(err, "unmarshal entity"))
-	}
-
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
 
 	// Verify that the public key is associated with the entity.
-	sigHash, height, approved, err := oracle.VerifyXPub(ctx, dbConn, v.BlockHandler, entity, xpub)
+	sigHash, height, approved, err := oracle.VerifyXPub(ctx, dbConn, v.BlockHandler,
+		&requestData.Entity, requestData.XPubs)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify xpub"))
 	}
@@ -146,7 +114,7 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 	}{
 		Approved:     approved,
 		SigAlgorithm: 1,
-		Sig:          hex.EncodeToString(sig.Bytes()),
+		Sig:          sig.String(),
 		BlockHeight:  height,
 	}
 
