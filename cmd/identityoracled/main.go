@@ -43,7 +43,7 @@ func main() {
 	logFileName := os.Getenv("LOG_FILE_PATH")
 	if len(logFileName) > 0 {
 		if err := logConfig.Main.AddFile(logFileName); err != nil {
-			fmt.Printf("Failed to Address log file : %s\n", err)
+			fmt.Printf("Failed to add log file : %s\n", err)
 			return
 		}
 	}

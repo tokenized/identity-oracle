@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/hex"
 	"net/http"
 
 	"github.com/tokenized/identity-oracle/internal/oracle"
@@ -32,28 +31,24 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	defer span.End()
 
 	var requestData struct {
-		XPub     string `json:"xpub" validate:"required"`
-		Index    uint32 `json:"index"`
-		Contract string `json:"contract" validate:"required"`
-		AssetID  string `json:"asset_id" validate:"required"`
-		Quantity uint64 `json:"quantity"`
+		XPubs    bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
+		Index    uint32               `json:"index"`
+		Contract string               `json:"contract" validate:"required"`
+		AssetID  string               `json:"asset_id" validate:"required"`
+		Quantity uint64               `json:"quantity"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	xpub, err := bitcoin.ExtendedKeysFromStr(requestData.XPub)
-	if err != nil {
-		return translate(errors.Wrap(err, "decode xpub"))
-	}
-
 	dbConn := t.MasterDB.Copy()
 	defer dbConn.Close()
 
 	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
-	sigHash, height, approved, err := oracle.ApproveTransfer(ctx, dbConn, t.BlockHandler,
-		requestData.Contract, requestData.AssetID, xpub, requestData.Index, requestData.Quantity)
+	sigHash, height, hash, approved, err := oracle.ApproveTransfer(ctx, dbConn, t.BlockHandler,
+		requestData.Contract, requestData.AssetID, requestData.XPubs, requestData.Index,
+		requestData.Quantity)
 	if err != nil {
 		return translate(errors.Wrap(err, "approve transfer"))
 	}
@@ -64,15 +59,17 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	}
 
 	response := struct {
-		Approved     bool   `json:"approved"`
-		SigAlgorithm uint32 `json:"algorithm"`
-		Sig          string `json:"signature"`
-		BlockHeight  uint32 `json:"block_height"`
+		Approved     bool           `json:"approved"`
+		SigAlgorithm uint32         `json:"algorithm"`
+		Sig          string         `json:"signature"`
+		BlockHeight  uint32         `json:"block_height"`
+		BlockHash    bitcoin.Hash32 `json:"block_hash"`
 	}{
 		Approved:     approved,
 		SigAlgorithm: 1,
-		Sig:          hex.EncodeToString(sig.Bytes()),
+		Sig:          sig.String(),
 		BlockHeight:  height,
+		BlockHash:    hash,
 	}
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)
