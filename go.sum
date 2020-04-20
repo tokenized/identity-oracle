@@ -99,6 +99,8 @@ github.com/tokenized/smart-contract v0.2.3-0.20200409033156-953741be549c h1:NJEA
 github.com/tokenized/smart-contract v0.2.3-0.20200409033156-953741be549c/go.mod h1:Vr7VsqpYHPT+TOZuepR2iCjT7p1JIfG9uMqjcKCkzhM=
 github.com/tokenized/smart-contract v0.2.3-0.20200420023316-64311de2beb9 h1:VVMyoLxXVazOfmG3N1P+UDb672Tbkf8mqx3mHoHUmPo=
 github.com/tokenized/smart-contract v0.2.3-0.20200420023316-64311de2beb9/go.mod h1:Vr7VsqpYHPT+TOZuepR2iCjT7p1JIfG9uMqjcKCkzhM=
+github.com/tokenized/smart-contract v0.2.3-0.20200420220302-77aaf76044f0 h1:eHvlZnZj+Vum0YLcVBrYyfdese21uGHN7f9sgWlAgns=
+github.com/tokenized/smart-contract v0.2.3-0.20200420220302-77aaf76044f0/go.mod h1:Vr7VsqpYHPT+TOZuepR2iCjT7p1JIfG9uMqjcKCkzhM=
 github.com/tokenized/specification v0.2.1 h1:ritROheLUL1QeemhveRlAhaARpAin2Ee4xmOaMjAp80=
 github.com/tokenized/specification v0.2.1/go.mod h1:8QHhqLHxThlZ3hEGD69UhAuj/AChbCWLNUrr1YNk46E=
 github.com/tokenized/specification v0.2.2-0.20191219061451-ecd0fc17c3ca h1:JyXjlMhKJUndsNwh074+MMF1+JVTvm9CbXjzoEdFZgY=
@@ -109,6 +111,8 @@ github.com/tokenized/specification v0.2.3-0.20200202201119-e0805f8cc0c1 h1:B9hh3
 github.com/tokenized/specification v0.2.3-0.20200202201119-e0805f8cc0c1/go.mod h1:2Zsv/mL98DWvoe8wjq5gbRnM2X4Ai7JeideRQ+Y1qCg=
 github.com/tokenized/specification v0.2.3-0.20200331020322-b65a25099cf8 h1:NhRvirpo8qbZMFl7wEFGQKP6G5CF26KRmUi1eTvR4jo=
 github.com/tokenized/specification v0.2.3-0.20200331020322-b65a25099cf8/go.mod h1:2Zsv/mL98DWvoe8wjq5gbRnM2X4Ai7JeideRQ+Y1qCg=
+github.com/tokenized/specification v0.2.3-0.20200331221742-b4bff99dd12b h1:LT2/tTLqeczTvQQIRt+fE0E7P2eIJFA9xJmbhRtDFD4=
+github.com/tokenized/specification v0.2.3-0.20200331221742-b4bff99dd12b/go.mod h1:2Zsv/mL98DWvoe8wjq5gbRnM2X4Ai7JeideRQ+Y1qCg=
 github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564 h1:NXXyQVeRVLK8Xu27/hkkjwVOZLk5v4ZBEvvMtqMqznM=
 github.com/tyler-smith/go-bip32 v0.0.0-20170922074101-2c9cfd177564/go.mod h1:0/YuQQF676+d4CMNclTqGUam1EDwz0B8o03K9pQqA3c=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
