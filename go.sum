@@ -101,6 +101,8 @@ github.com/tokenized/smart-contract v0.2.3-0.20200420023316-64311de2beb9 h1:VVMy
 github.com/tokenized/smart-contract v0.2.3-0.20200420023316-64311de2beb9/go.mod h1:Vr7VsqpYHPT+TOZuepR2iCjT7p1JIfG9uMqjcKCkzhM=
 github.com/tokenized/smart-contract v0.2.3-0.20200420220302-77aaf76044f0 h1:eHvlZnZj+Vum0YLcVBrYyfdese21uGHN7f9sgWlAgns=
 github.com/tokenized/smart-contract v0.2.3-0.20200420220302-77aaf76044f0/go.mod h1:Vr7VsqpYHPT+TOZuepR2iCjT7p1JIfG9uMqjcKCkzhM=
+github.com/tokenized/smart-contract v0.2.3-0.20200421070319-d78f649c0bb5 h1:IX2JIbyv+TpU1RHQf0j4tQoQDO2lB2lKvKcTNCDnCng=
+github.com/tokenized/smart-contract v0.2.3-0.20200421070319-d78f649c0bb5/go.mod h1:Vr7VsqpYHPT+TOZuepR2iCjT7p1JIfG9uMqjcKCkzhM=
 github.com/tokenized/specification v0.2.1 h1:ritROheLUL1QeemhveRlAhaARpAin2Ee4xmOaMjAp80=
 github.com/tokenized/specification v0.2.1/go.mod h1:8QHhqLHxThlZ3hEGD69UhAuj/AChbCWLNUrr1YNk46E=
 github.com/tokenized/specification v0.2.2-0.20191219061451-ecd0fc17c3ca h1:JyXjlMhKJUndsNwh074+MMF1+JVTvm9CbXjzoEdFZgY=
