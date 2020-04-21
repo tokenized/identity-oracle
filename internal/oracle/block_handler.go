@@ -33,7 +33,7 @@ func (bh *BlockHandler) SigHash(ctx context.Context) (bitcoin.Hash32, uint32, er
 		return bitcoin.Hash32{}, 0, errors.New("Not enough blocks")
 	}
 
-	return bh.LatestBlocks[len(bh.LatestBlocks)-4], bh.LatestHeight - 4, nil
+	return bh.LatestBlocks[len(bh.LatestBlocks)-4], bh.LatestHeight - 3, nil
 }
 
 func (bh *BlockHandler) Save(ctx context.Context, dbConn *db.DB) error {
@@ -153,8 +153,10 @@ func (bh *BlockHandler) HandleInSync(ctx context.Context) error {
 	bh.InSync = true
 
 	bh.Log.Printf("Latest blocks :\n")
+	height := bh.LatestHeight
 	for i := len(bh.LatestBlocks) - 1; i >= 0; i-- {
-		bh.Log.Printf("  %s\n", bh.LatestBlocks[i].String())
+		bh.Log.Printf("  %d %s\n", height, bh.LatestBlocks[i].String())
+		height--
 	}
 
 	return nil
