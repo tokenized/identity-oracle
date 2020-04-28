@@ -13,7 +13,9 @@ import (
 // server, or a Lambda function.
 type Config struct {
 	Oracle struct {
-		Key string `envconfig:"KEY" json:"KEY"`
+		Key        string `envconfig:"KEY" json:"KEY"`
+		Entity     string `envconfig:"ENTITY" json:"ENTITY"`
+		EntityFile string `envconfig:"ENTITY_FILE" json:"ENTITY_FILE"`
 	}
 	Web struct {
 		RootURL         string        `envconfig:"ROOT_URL" json:"ROOT_URL"`

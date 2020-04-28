@@ -93,10 +93,15 @@ func main() {
 	// ---------------------------------------------------------------------------------------------
 	// Entity
 
-	entityFileName := os.Getenv("ENTITY_FILE")
 	var entity actions.EntityField
-	if len(entityFileName) > 0 {
-		data, err := ioutil.ReadFile(filepath.FromSlash(entityFileName))
+	if len(cfg.Oracle.Entity) > 0 {
+		// Put json data into opReturn struct
+		if err := json.Unmarshal([]byte(cfg.Oracle.Entity), &entity); err != nil {
+			log.Printf("Failed to unmarshal entity json : %s\n", err)
+			return
+		}
+	} else if len(cfg.Oracle.EntityFile) > 0 {
+		data, err := ioutil.ReadFile(filepath.FromSlash(cfg.Oracle.EntityFile))
 		if err != nil {
 			log.Printf("Failed to read entity json file : %s\n", err)
 			return
