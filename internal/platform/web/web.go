@@ -52,6 +52,10 @@ func New(config *Config, log logger.Logger, mw ...Middleware) *App {
 	}
 }
 
+func (a *App) AddMiddleWare(mw ...Middleware) {
+	a.mw = append(a.mw, mw...)
+}
+
 // Handle is our mechanism for mounting Handlers for a given HTTP verb and path
 // pair, this makes for really easy, convenient routing.
 func (a *App) Handle(verb, path string, handler Handler, mw ...Middleware) {

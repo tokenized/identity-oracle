@@ -17,13 +17,16 @@ import (
 func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
 	blockHandler *oracle.BlockHandler) http.Handler {
 
-	app := web.New(config, log, mid.RequestLogger, mid.Metrics, mid.ErrorHandler, mid.CORS)
+	app := web.New(config, log, mid.Metrics, mid.ErrorHandler, mid.CORS)
 
 	// Register OPTIONS fallback handler for preflight requests.
 	app.HandleOptions(mid.CORSHandler)
 
 	hh := handlers.Health{}
 	app.Handle("GET", "/health", hh.Health)
+
+	// We don't need to log health requests, so add this middleware after the health request.
+	app.AddMiddleWare(mid.RequestLogger)
 
 	oh := handlers.Oracle{
 		Config:   config,

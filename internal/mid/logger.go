@@ -16,7 +16,8 @@ import (
 func RequestLogger(next web.Handler) web.Handler {
 
 	// Wrap this handler around the next one provided.
-	h := func(ctx context.Context, log logger.Logger, w http.ResponseWriter, r *http.Request, params map[string]string) error {
+	h := func(ctx context.Context, log logger.Logger, w http.ResponseWriter, r *http.Request,
+		params map[string]string) error {
 		ctx, span := trace.StartSpan(ctx, "internal.mid.RequestLogger")
 		defer span.End()
 
