@@ -3,6 +3,7 @@ package oracle
 import (
 	"context"
 
+	"github.com/tokenized/identity-oracle/internal/platform/config"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 
 	"github.com/tokenized/smart-contract/pkg/bitcoin"
@@ -12,6 +13,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ApproveTransfer determines if a transfer is approved.
+// Returns:
+//   []byte - signature hash
+//   uint32 - block height of block hash included in signature hash
+//   bitcoin.Hash32 - block hash included in signature hash
+//   bool - true if transfer is approved
 func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
 	contract, asset string, xpub bitcoin.ExtendedKeys, index uint32,
 	quantity uint64) ([]byte, uint32, bitcoin.Hash32, bool, error) {
@@ -34,6 +41,15 @@ func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHand
 	}
 
 	// TODO Verify user meets criteria
+	approved := true
+	approveValue := uint8(1)
+
+	// Dev reject testing
+	testValues := config.ContextTestValues(ctx)
+	if testValues.RejectQuantity != 0 && testValues.RejectQuantity == quantity {
+		approved = false
+		approveValue = 0
+	}
 
 	contractAddress, err := bitcoin.DecodeAddress(contract)
 	if err != nil {
@@ -59,10 +75,10 @@ func ApproveTransfer(ctx context.Context, dbConn *db.DB, blockHandler *BlockHand
 	}
 
 	sigHash, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, assetCode.Bytes(),
-		receiveAddress, quantity, &blockHash, 1)
+		receiveAddress, quantity, &blockHash, approveValue)
 	if err != nil {
 		return nil, 0, bitcoin.Hash32{}, false, errors.Wrap(err, "generate signature")
 	}
 
-	return sigHash, height, blockHash, true, nil
+	return sigHash, height, blockHash, approved, nil
 }

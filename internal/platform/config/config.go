@@ -12,6 +12,7 @@ import (
 // The same Config is used regardless of if the server is a regualar HTTP
 // server, or a Lambda function.
 type Config struct {
+	Env    string `envconfig:"ENV" json:"ENV"`
 	Oracle struct {
 		Key        string `envconfig:"KEY" json:"KEY"`
 		Entity     string `envconfig:"ENTITY" json:"ENTITY"`
@@ -61,6 +62,7 @@ func unmarshalNested(data []byte, cfg *Config) error {
 	var err error
 
 	// Unmarshal each item
+	err = json.Unmarshal(data, &cfg)
 	err = json.Unmarshal(data, &cfg.Oracle)
 	err = json.Unmarshal(data, &cfg.Web)
 	err = json.Unmarshal(data, &cfg.Bitcoin)

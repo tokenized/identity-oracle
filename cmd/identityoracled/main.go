@@ -69,6 +69,18 @@ func main() {
 		log.Fatalf("main : Parsing Config : %v", err)
 	}
 
+	if cfg.Env == "dev" || cfg.Env == "local" {
+		log.Printf("main : Configuring test values")
+		ctx = config.ContextWithTestValues(ctx, config.TestValues{
+			RejectQuantity: 256,
+		})
+	}
+
+	testValues := config.ContextTestValues(ctx)
+	if testValues.RejectQuantity != 0 {
+		log.Printf("main : Test RejectQuantity %d", testValues.RejectQuantity)
+	}
+
 	// ---------------------------------------------------------------------------------------------
 	// App Starting
 
