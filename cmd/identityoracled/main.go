@@ -69,7 +69,7 @@ func main() {
 		log.Fatalf("main : Parsing Config : %v", err)
 	}
 
-	if cfg.Env == "dev" || cfg.Env == "local" {
+	if len(cfg.Env) != 0 && cfg.Env != "prod" { // all environments except production
 		log.Printf("main : Configuring test values")
 		ctx = config.ContextWithTestValues(ctx, config.TestValues{
 			RejectQuantity: 256,
