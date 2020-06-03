@@ -53,3 +53,10 @@ paths:
     $ref: "./identity/verify_pub_key.yaml"
   /identity/verifyXPub:
     $ref: "./identity/verify_xpub.yaml"
+
+components:
+  schemas:
+    Entity:
+      $ref: ./_components/schemas/Entity.yaml
+    TransferApproval:
+      $ref: ./_components/schemas/TransferApproval.yaml

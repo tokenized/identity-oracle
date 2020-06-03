@@ -26,12 +26,7 @@ post:
         application/json:
           schema:
             type: object
-            properties:
-              approved:
-                type: boolean
-              algorithm:
-                type: number
-              signature:
-                type: string
-              block_height:
-                type: number
+            $ref: "#/components/schemas/TransferApproval"
+
+    404:
+      description: Xpub not found

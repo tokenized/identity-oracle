@@ -1,4 +1,5 @@
-# Tokenized specification Entity
+# Tokenized specification Entity 
+# defined at https://github.com/tokenized/specification/blob/master/dist/golang/actions/actions.pb.go type EntityField
 type: object
 properties:
   data:

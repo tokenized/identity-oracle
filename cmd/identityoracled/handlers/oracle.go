@@ -25,6 +25,7 @@ type Oracle struct {
 	Config   *web.Config
 	MasterDB *db.DB
 	Key      bitcoin.Key
+	Approver oracle.ApproverInterface
 }
 
 // Identity returns identity information about the oracle.
@@ -73,6 +74,13 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 	// Insert user
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
+
+	if o.Approver != nil {
+		if status, err := o.Approver.ApproveRegistration(ctx, requestData.Entity, requestData.PublicKey); err != nil {
+			web.RespondError(ctx, log, w, err, status)
+			return nil
+		}
+	}
 
 	user := oracle.User{
 		ID:           uuid.New().String(),

@@ -23,6 +23,7 @@ type Verify struct {
 	MasterDB     *db.DB
 	Key          bitcoin.Key
 	BlockHandler *oracle.BlockHandler
+	Approver     oracle.ApproverInterface
 }
 
 // PubKeySignature returns an approve/deny signature for an association between an entity and a

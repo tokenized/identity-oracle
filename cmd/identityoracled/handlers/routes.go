@@ -14,7 +14,7 @@ import (
 
 // API returns a handler for a set of routes.
 func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
-	blockHandler *oracle.BlockHandler) http.Handler {
+	blockHandler *oracle.BlockHandler, approver oracle.ApproverInterface) http.Handler {
 
 	app := web.New(config, log, mid.RequestLogger, mid.Metrics, mid.ErrorHandler, mid.CORS)
 
@@ -28,6 +28,7 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 		Config:   config,
 		MasterDB: masterDB,
 		Key:      key,
+		Approver: approver,
 	}
 	app.Handle("GET", "/oracle/id", oh.Identity)
 	app.Handle("POST", "/oracle/register", oh.Register)
@@ -39,6 +40,7 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 		MasterDB:     masterDB,
 		Key:          key,
 		BlockHandler: blockHandler,
+		Approver:     approver,
 	}
 	app.Handle("POST", "/transfer/approve", th.TransferSignature)
 
@@ -47,6 +49,7 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 		MasterDB:     masterDB,
 		Key:          key,
 		BlockHandler: blockHandler,
+		Approver:     approver,
 	}
 	app.Handle("POST", "/identity/verifyPubKey", vh.PubKeySignature)
 	app.Handle("POST", "/identity/verifyXPub", vh.XPubSignature)

@@ -1,0 +1,23 @@
+# Token transfer receive approval
+type: object
+properties:
+  data:
+    type: object
+    properties:
+      approved:
+        type: boolean
+        example: true
+      description:
+        type: string
+        example: "transfer approved"
+      algorithm:
+        type: number
+        example: 1
+      signature:
+        type: string
+      block_height:
+        type: number
+        example: "635123"
+      block_hash:
+        type: string
+        example: "000000000000000001b4388ba4eb08fc5bcdfd3a8e4b3f566a6de4eebd019cb3"
