@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/tokenized/smart-contract/pkg/json"
-	"github.com/tokenized/smart-contract/pkg/logger"
+	"github.com/tokenized/pkg/json"
+	"github.com/tokenized/pkg/logger"
 
 	"github.com/pkg/errors"
 )

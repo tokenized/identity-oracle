@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/pkg/bitcoin"
 )
 
 // ctxKey represents the type of value for the context key.

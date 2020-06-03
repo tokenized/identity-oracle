@@ -11,7 +11,7 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/tests"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/pkg/bitcoin"
 
 	"github.com/tokenized/specification/dist/golang/actions"
 

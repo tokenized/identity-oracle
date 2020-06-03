@@ -3,7 +3,7 @@ package tests
 import (
 	"context"
 
-	"github.com/tokenized/smart-contract/pkg/storage"
+	"github.com/tokenized/pkg/storage"
 )
 
 // ============================================================

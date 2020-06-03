@@ -20,12 +20,12 @@ import (
 
 	"github.com/tokenized/specification/dist/golang/actions"
 
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
-	"github.com/tokenized/smart-contract/pkg/logger"
-	"github.com/tokenized/smart-contract/pkg/spynode"
-	"github.com/tokenized/smart-contract/pkg/spynode/handlers/data"
-	"github.com/tokenized/smart-contract/pkg/storage"
-	"github.com/tokenized/smart-contract/pkg/wire"
+	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/logger"
+	"github.com/tokenized/pkg/spynode"
+	"github.com/tokenized/pkg/spynode/handlers/data"
+	"github.com/tokenized/pkg/storage"
+	"github.com/tokenized/pkg/wire"
 )
 
 func Run(approver oracle.ApproverInterface) {
