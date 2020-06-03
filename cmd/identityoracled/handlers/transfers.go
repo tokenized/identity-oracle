@@ -56,7 +56,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		return translate(errors.Wrap(err, "fetch user"))
 	}
 
-	var approved bool
+	approved := true
 	var description string
 	if t.Approver != nil {
 		var approveErr error
