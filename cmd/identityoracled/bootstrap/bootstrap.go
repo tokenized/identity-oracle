@@ -69,18 +69,6 @@ func Run(approver oracle.ApproverInterface) {
 		log.Fatalf("main : Parsing Config : %v", err)
 	}
 
-	if len(cfg.Env) != 0 && cfg.Env != "prod" { // all environments except production
-		log.Printf("main : Configuring test values")
-		ctx = config.ContextWithTestValues(ctx, config.TestValues{
-			RejectQuantity: 256,
-		})
-	}
-
-	testValues := config.ContextTestValues(ctx)
-	if testValues.RejectQuantity != 0 {
-		log.Printf("main : Test RejectQuantity %d", testValues.RejectQuantity)
-	}
-
 	// ---------------------------------------------------------------------------------------------
 	// App Starting
 
@@ -184,6 +172,15 @@ func Run(approver oracle.ApproverInterface) {
 		Net:     bitcoin.NetworkFromString(cfg.Bitcoin.Network),
 		IsTest:  cfg.Bitcoin.IsTest,
 		Entity:  entity,
+	}
+
+	if len(cfg.Env) != 0 && cfg.Env != "prod" { // all environments except production
+		log.Printf("main : Configuring test values")
+		webConfig.RejectQuantity = 256
+	}
+
+	if webConfig.RejectQuantity != 0 {
+		log.Printf("main : Test RejectQuantity %d", webConfig.RejectQuantity)
 	}
 
 	// ---------------------------------------------------------------------------------------------

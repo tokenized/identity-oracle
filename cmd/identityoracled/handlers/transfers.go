@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/tokenized/identity-oracle/internal/oracle"
-	"github.com/tokenized/identity-oracle/internal/platform/config"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 
@@ -68,8 +67,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	}
 
 	// Dev reject testing
-	testValues := config.ContextTestValues(ctx)
-	if testValues.RejectQuantity != 0 && testValues.RejectQuantity == requestData.Quantity {
+	if t.Config.RejectQuantity != 0 && t.Config.RejectQuantity == requestData.Quantity {
 		approved = false
 		description = "test reject quantity"
 	}

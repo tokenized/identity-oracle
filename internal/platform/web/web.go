@@ -40,6 +40,9 @@ type Config struct {
 
 	// Identification of oracle operator
 	Entity actions.EntityField
+
+	// Quantity to test intentional rejection in test environments.
+	RejectQuantity uint64
 }
 
 // New creates an App value that handle a set of routes for the application.
