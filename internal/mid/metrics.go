@@ -7,7 +7,7 @@ import (
 	"runtime"
 
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-	"github.com/tokenized/smart-contract/pkg/logger"
+	"github.com/tokenized/pkg/logger"
 
 	"go.opencensus.io/trace"
 )

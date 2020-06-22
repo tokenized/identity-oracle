@@ -1,0 +1,33 @@
+post:
+  tags: [identity]
+  summary: Requests a signature for an entity and pub key association.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            xpub:
+              type: string
+            index:
+              type: number
+            entity:
+              $ref: "#/components/schemas/Entity"
+
+  responses:
+    200:
+      description: Successful operation
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              approved:
+                type: boolean
+              algorithm:
+                type: number
+              signature:
+                type: string
+              block_height:
+                type: number

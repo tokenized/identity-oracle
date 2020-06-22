@@ -5,7 +5,7 @@ import (
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/pkg/bitcoin"
 
 	"github.com/tokenized/specification/dist/golang/actions"
 

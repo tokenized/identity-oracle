@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/hex"
 	"net/http"
 	"time"
 
@@ -10,8 +9,8 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
-	"github.com/tokenized/smart-contract/pkg/logger"
+	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/logger"
 
 	"github.com/tokenized/specification/dist/golang/actions"
 
@@ -21,11 +20,12 @@ import (
 	"go.opencensus.io/trace"
 )
 
-// Oracle provides support for orchestration health checks.
+// Oracle provides support for identity checks.
 type Oracle struct {
 	Config   *web.Config
 	MasterDB *db.DB
 	Key      bitcoin.Key
+	Approver oracle.ApproverInterface
 }
 
 // Identity returns identity information about the oracle.
@@ -36,19 +36,14 @@ func (o *Oracle) Identity(ctx context.Context, log logger.Logger, w http.Respons
 	defer span.End()
 
 	response := struct {
-		Entity    string `json:"entity"`
-		URL       string `json:"url"`
-		PublicKey string `json:"public_key"`
+		Entity    actions.EntityField `json:"entity"`
+		URL       string              `json:"url"`
+		PublicKey bitcoin.PublicKey   `json:"public_key"`
 	}{
+		Entity:    o.Config.Entity,
 		URL:       o.Config.RootURL,
-		PublicKey: hex.EncodeToString(o.Key.PublicKey().Bytes()),
+		PublicKey: o.Key.PublicKey(),
 	}
-
-	entityBytes, err := proto.Marshal(&o.Config.Entity)
-	if err != nil {
-		return errors.Wrap(err, "serialize entity")
-	}
-	response.Entity = hex.EncodeToString(entityBytes)
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)
 	return nil
@@ -63,37 +58,34 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 
 	// TODO Add birth date
 	var requestData struct {
-		Entity    string `json:"entity" validate:"required"`     // hex protobuf
-		PublicKey string `json:"public_key" validate:"required"` // hex compressed
+		Entity    actions.EntityField `json:"entity" validate:"required"`     // hex protobuf
+		PublicKey bitcoin.PublicKey   `json:"public_key" validate:"required"` // hex compressed
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	entityBytes, err := hex.DecodeString(requestData.Entity)
+	entityBytes, err := proto.Marshal(&requestData.Entity)
 	if err != nil {
-		return translate(errors.Wrap(err, "decode entity hex"))
-	}
-
-	entity := &actions.EntityField{}
-	if err := proto.Unmarshal(entityBytes, entity); err != nil {
-		return translate(errors.Wrap(err, "unmarshal entity"))
-	}
-
-	pubKey, err := bitcoin.PublicKeyFromStr(requestData.PublicKey)
-	if err != nil {
-		return translate(errors.Wrap(err, "decode public key"))
+		return translate(errors.Wrap(err, "protobuf marshal entity"))
 	}
 
 	// Insert user
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
 
+	if o.Approver != nil {
+		if status, err := o.Approver.ApproveRegistration(ctx, requestData.Entity, requestData.PublicKey); err != nil {
+			web.RespondError(ctx, log, w, err, status)
+			return nil
+		}
+	}
+
 	user := oracle.User{
 		ID:           uuid.New().String(),
 		Entity:       entityBytes,
-		PublicKey:    pubKey,
+		PublicKey:    requestData.PublicKey,
 		DateCreated:  time.Now(),
 		DateModified: time.Now(),
 		Approved:     true, // TODO Add approval step
@@ -124,10 +116,10 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 	defer span.End()
 
 	var requestData struct {
-		UserID          string `json:"user_id" validate:"required"`
-		XPub            string `json:"xpub" validate:"required"` // hex
-		RequiredSigners int    `json:"required_signers" validate:"required"`
-		Signature       string `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
+		UserID          string               `json:"user_id" validate:"required"`
+		XPubs           bitcoin.ExtendedKeys `json:"xpubs" validate:"required"` // hex
+		RequiredSigners int                  `json:"required_signers" validate:"required"`
+		Signature       bitcoin.Signature    `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
@@ -149,21 +141,10 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 	xpub := oracle.XPub{
 		ID:              uuid.New().String(),
 		UserID:          requestData.UserID,
+		XPub:            requestData.XPubs,
 		RequiredSigners: requestData.RequiredSigners,
 		DateCreated:     time.Now(),
 	}
-
-	xpub.XPub, err = bitcoin.ExtendedKeysFromStr(requestData.XPub)
-	if err != nil {
-		return translate(errors.Wrap(err, "decode xpub"))
-	}
-
-	signature, err := bitcoin.SignatureFromStr(requestData.Signature)
-	if err != nil {
-		return translate(errors.Wrap(err, "decode sig"))
-	}
-
-	hash := bitcoin.DoubleSha256([]byte(requestData.UserID + requestData.XPub))
 
 	// Fetch User
 	user, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
@@ -172,7 +153,8 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 	}
 
 	// Verify signature is valid for user's public key
-	if !signature.Verify(hash, user.PublicKey) {
+	hash := bitcoin.DoubleSha256([]byte(requestData.UserID + requestData.XPubs.String()))
+	if !requestData.Signature.Verify(hash, user.PublicKey) {
 		return translate(errors.Wrap(err, "validate sig"))
 	}
 
@@ -193,23 +175,18 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 	defer span.End()
 
 	var requestData struct {
-		XPub string `json:"xpub" validate:"required"` // hex
+		XPubs bitcoin.ExtendedKeys `json:"xpubs" validate:"required"` // hex
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	xpub, err := bitcoin.ExtendedKeysFromStr(requestData.XPub)
-	if err != nil {
-		return translate(errors.Wrap(err, "decode xpub"))
-	}
-
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
 
 	// Check user ID
-	userID, err := oracle.FetchUserIDByXPub(ctx, dbConn, xpub)
+	userID, err := oracle.FetchUserIDByXPub(ctx, dbConn, requestData.XPubs)
 	if err != nil {
 		if err == oracle.ErrXPubNotFound {
 			return web.ErrNotFound // XPub doesn't exist

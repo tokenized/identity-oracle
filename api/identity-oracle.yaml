@@ -1,0 +1,62 @@
+openapi: 3.0.0
+
+info:
+  version: 0.1.0
+  title: Tokenized Identity Oracle API
+  description: >
+    Welcome to the Tokenized Identity Oracle API reference.
+    This API exposes endpoints intended to support the operation of an identity oracle.
+
+servers:
+  - url: http://localhost:8080
+    description: Test server
+
+  - url: https://identity.tokenized.com
+    description: Production server (uses live data)
+
+tags:
+  - name: oracle
+    description: Oracle actions
+
+  - name: transfer
+    description: Transfer related actions
+
+  - name: identity
+    description: Identity/Entity related actions
+
+paths:
+  # Index
+  /health:
+    get:
+      summary: Health check
+      description: This endpoint can be called verify that you can reach the API.
+      responses:
+        200:
+          description: Successful operation
+
+  # Oracle
+  /oracle/id:
+    $ref: "./oracle/id.yaml"
+  /oracle/register:
+    $ref: "./oracle/register.yaml"
+  /oracle/addXPub:
+    $ref: "./oracle/add_xpub.yaml"
+  /oracle/user:
+    $ref: "./oracle/user.yaml"
+
+  # Transfer
+  /transfer/approve:
+    $ref: "./transfer/approve.yaml"
+
+  # Identity
+  /identity/verifyPubKey:
+    $ref: "./identity/verify_pub_key.yaml"
+  /identity/verifyXPub:
+    $ref: "./identity/verify_xpub.yaml"
+
+components:
+  schemas:
+    Entity:
+      $ref: ./_components/schemas/Entity.yaml
+    TransferApproval:
+      $ref: ./_components/schemas/TransferApproval.yaml

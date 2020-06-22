@@ -1,0 +1,22 @@
+# Tokenized specification Entity 
+# defined at https://github.com/tokenized/specification/blob/master/dist/golang/actions/actions.pb.go type EntityField
+type: object
+properties:
+  data:
+    type: object
+    properties:
+      Name:
+        type: string
+        example: "John Bitcoin"
+      Type:
+        type: string
+        example: "I"
+      LEI:
+        type: string
+        example: "54930084UKLVMY22DS16"
+      EmailAddress:
+        type: string
+        example: "john@tokenized.com"
+      DomainName:
+        type: string
+        example: "tokenized.com"

@@ -8,10 +8,10 @@ import (
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
-	"github.com/tokenized/smart-contract/pkg/logger"
-	"github.com/tokenized/smart-contract/pkg/spynode/handlers"
-	"github.com/tokenized/smart-contract/pkg/wire"
+	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/logger"
+	"github.com/tokenized/pkg/spynode/handlers"
+	"github.com/tokenized/pkg/wire"
 
 	"github.com/pkg/errors"
 )
@@ -33,7 +33,7 @@ func (bh *BlockHandler) SigHash(ctx context.Context) (bitcoin.Hash32, uint32, er
 		return bitcoin.Hash32{}, 0, errors.New("Not enough blocks")
 	}
 
-	return bh.LatestBlocks[len(bh.LatestBlocks)-4], bh.LatestHeight - 4, nil
+	return bh.LatestBlocks[len(bh.LatestBlocks)-4], bh.LatestHeight - 3, nil
 }
 
 func (bh *BlockHandler) Save(ctx context.Context, dbConn *db.DB) error {
@@ -153,8 +153,10 @@ func (bh *BlockHandler) HandleInSync(ctx context.Context) error {
 	bh.InSync = true
 
 	bh.Log.Printf("Latest blocks :\n")
+	height := bh.LatestHeight
 	for i := len(bh.LatestBlocks) - 1; i >= 0; i-- {
-		bh.Log.Printf("  %s\n", bh.LatestBlocks[i].String())
+		bh.Log.Printf("  %d %s\n", height, bh.LatestBlocks[i].String())
+		height--
 	}
 
 	return nil

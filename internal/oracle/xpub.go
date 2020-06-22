@@ -6,7 +6,7 @@ import (
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
+	"github.com/tokenized/pkg/bitcoin"
 )
 
 const (
@@ -51,9 +51,9 @@ func CreateXPub(ctx context.Context, dbConn *db.DB, xpub XPub) error {
 func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (XPub, error) {
 	sql := `SELECT ` + XPubColumns + `
 		FROM
-			xpubs
+			xpubs xp
 		WHERE
-			xpubs.xpub = ?`
+			xp.xpub = ?`
 
 	result := XPub{}
 	err := dbConn.Get(ctx, &result, sql, xpub)

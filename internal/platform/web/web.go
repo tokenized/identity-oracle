@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tokenized/smart-contract/pkg/bitcoin"
-	"github.com/tokenized/smart-contract/pkg/logger"
+	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/logger"
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/dimfeld/httptreemux"
@@ -40,6 +40,9 @@ type Config struct {
 
 	// Identification of oracle operator
 	Entity actions.EntityField
+
+	// Quantity to test intentional rejection in test environments.
+	RejectQuantity uint64
 }
 
 // New creates an App value that handle a set of routes for the application.
@@ -50,6 +53,10 @@ func New(config *Config, log logger.Logger, mw ...Middleware) *App {
 		log:     log,
 		mw:      mw,
 	}
+}
+
+func (a *App) AddMiddleWare(mw ...Middleware) {
+	a.mw = append(a.mw, mw...)
 }
 
 // Handle is our mechanism for mounting Handlers for a given HTTP verb and path

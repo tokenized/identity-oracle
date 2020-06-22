@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tokenized/smart-contract/pkg/storage"
+	"github.com/tokenized/pkg/storage"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"

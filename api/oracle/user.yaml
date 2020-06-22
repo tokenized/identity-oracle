@@ -1,0 +1,24 @@
+post:
+  tags: [oracle]
+  summary: Requests a user id associated with a specified xpub.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            xpub:
+              type: string
+
+  responses:
+    200:
+      description: Successful operation
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              user_id:
+                type: string
+                example: "9706702a-ee87-4b14-ac29-7cc56abfe5db"
