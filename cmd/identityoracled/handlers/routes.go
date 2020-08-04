@@ -7,14 +7,14 @@ import (
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/logger"
 )
 
 // API returns a handler for a set of routes.
 func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
-	blockHandler *oracle.BlockHandler, approver oracle.ApproverInterface) http.Handler {
+	contractAddress bitcoin.RawAddress, blockHandler *oracle.BlockHandler,
+	expirationDurationSeconds int, approver oracle.ApproverInterface) http.Handler {
 
 	app := web.New(config, log, mid.RequestLogger, mid.Metrics, mid.ErrorHandler, mid.CORS)
 
@@ -25,10 +25,11 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 	app.Handle("GET", "/health", hh.Health)
 
 	oh := Oracle{
-		Config:   config,
-		MasterDB: masterDB,
-		Key:      key,
-		Approver: approver,
+		Config:          config,
+		MasterDB:        masterDB,
+		Approver:        approver,
+		Key:             key,
+		ContractAddress: contractAddress,
 	}
 	app.Handle("GET", "/oracle/id", oh.Identity)
 	app.Handle("POST", "/oracle/register", oh.Register)
@@ -36,11 +37,12 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 	app.Handle("POST", "/oracle/user", oh.User)
 
 	th := Transfers{
-		Config:       config,
-		MasterDB:     masterDB,
-		Key:          key,
-		BlockHandler: blockHandler,
-		Approver:     approver,
+		Config:                    config,
+		MasterDB:                  masterDB,
+		Key:                       key,
+		BlockHandler:              blockHandler,
+		ExpirationDurationSeconds: expirationDurationSeconds,
+		Approver:                  approver,
 	}
 	app.Handle("POST", "/transfer/approve", th.TransferSignature)
 

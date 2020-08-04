@@ -5,6 +5,8 @@ import (
 
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/specification/dist/golang/actions"
+
+	"github.com/google/uuid"
 )
 
 type ApproverInterface interface {
@@ -20,5 +22,5 @@ type ApproverInterface interface {
 	//   error - error
 	// An error aborts the process and returns an error to the user. If error is nil then a
 	// signature will be returned to the user, though it won't indicate approval unless specified.
-	ApproveTransfer(ctx context.Context, contract, assetID string, quantity uint64, userID string) (bool, string, error)
+	ApproveTransfer(ctx context.Context, contract, assetID string, userID uuid.UUID) (bool, string, error)
 }

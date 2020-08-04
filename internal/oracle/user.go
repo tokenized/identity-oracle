@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
-
 	"github.com/tokenized/pkg/bitcoin"
-
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -25,7 +24,7 @@ const (
 )
 
 // CreateUser inserts a user into the database.
-func CreateUser(ctx context.Context, dbConn *db.DB, user User) error {
+func CreateUser(ctx context.Context, dbConn *db.DB, user *User) error {
 	sql := `INSERT
 		INTO users (
 			id,
@@ -44,6 +43,8 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user User) error {
 		return errors.Wrap(err, "deserialize entity")
 	}
 
+	user.ID = uuid.New()
+
 	if err := dbConn.Execute(ctx, sql,
 		user.ID,
 		user.Entity,
@@ -58,7 +59,7 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user User) error {
 	return nil
 }
 
-func FetchUser(ctx context.Context, dbConn *db.DB, id string) (User, error) {
+func FetchUser(ctx context.Context, dbConn *db.DB, id uuid.UUID) (User, error) {
 	sql := `SELECT ` + UserColumns + `
 		FROM
 			users u

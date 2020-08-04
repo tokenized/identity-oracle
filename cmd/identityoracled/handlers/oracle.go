@@ -2,16 +2,16 @@ package handlers
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"net/http"
 	"time"
 
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/logger"
-
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/golang/protobuf/proto"
@@ -22,10 +22,11 @@ import (
 
 // Oracle provides support for identity checks.
 type Oracle struct {
-	Config   *web.Config
-	MasterDB *db.DB
-	Key      bitcoin.Key
-	Approver oracle.ApproverInterface
+	Config          *web.Config
+	MasterDB        *db.DB
+	Approver        oracle.ApproverInterface
+	Key             bitcoin.Key
+	ContractAddress bitcoin.RawAddress
 }
 
 // Identity returns identity information about the oracle.
@@ -36,13 +37,11 @@ func (o *Oracle) Identity(ctx context.Context, log logger.Logger, w http.Respons
 	defer span.End()
 
 	response := struct {
-		Entity    actions.EntityField `json:"entity"`
-		URL       string              `json:"url"`
-		PublicKey bitcoin.PublicKey   `json:"public_key"`
+		ContractAddress bitcoin.RawAddress `json:"contract_address"`
+		PublicKey       bitcoin.PublicKey  `json:"public_key"`
 	}{
-		Entity:    o.Config.Entity,
-		URL:       o.Config.RootURL,
-		PublicKey: o.Key.PublicKey(),
+		ContractAddress: o.ContractAddress,
+		PublicKey:       o.Key.PublicKey(),
 	}
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)
@@ -56,7 +55,6 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.Register")
 	defer span.End()
 
-	// TODO Add birth date
 	var requestData struct {
 		Entity    actions.EntityField `json:"entity" validate:"required"`     // hex protobuf
 		PublicKey bitcoin.PublicKey   `json:"public_key" validate:"required"` // hex compressed
@@ -82,8 +80,7 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 		}
 	}
 
-	user := oracle.User{
-		ID:           uuid.New().String(),
+	user := &oracle.User{
 		Entity:       entityBytes,
 		PublicKey:    requestData.PublicKey,
 		DateCreated:  time.Now(),
@@ -97,8 +94,8 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 	}
 
 	response := struct {
-		Status string `json:"status"`
-		UserID string `json:"user_id"`
+		Status string    `json:"status"`
+		UserID uuid.UUID `json:"user_id"`
 	}{
 		Status: "User Created",
 		UserID: user.ID,
@@ -116,7 +113,7 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 	defer span.End()
 
 	var requestData struct {
-		UserID          string               `json:"user_id" validate:"required"`
+		UserID          uuid.UUID            `json:"user_id" validate:"required"`
 		XPubs           bitcoin.ExtendedKeys `json:"xpubs" validate:"required"` // hex
 		RequiredSigners int                  `json:"required_signers" validate:"required"`
 		Signature       bitcoin.Signature    `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
@@ -138,8 +135,7 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 		return translate(errors.Wrap(err, "fetch user"))
 	}
 
-	xpub := oracle.XPub{
-		ID:              uuid.New().String(),
+	xpub := &oracle.XPub{
 		UserID:          requestData.UserID,
 		XPub:            requestData.XPubs,
 		RequiredSigners: requestData.RequiredSigners,
@@ -153,8 +149,15 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 	}
 
 	// Verify signature is valid for user's public key
-	hash := bitcoin.DoubleSha256([]byte(requestData.UserID + requestData.XPubs.String()))
-	if !requestData.Signature.Verify(hash, user.PublicKey) {
+	s := sha256.New()
+	s.Write(requestData.UserID[:])
+	s.Write(requestData.XPubs.Bytes())
+	if err := binary.Write(s, binary.LittleEndian, uint32(requestData.RequiredSigners)); err != nil {
+		return translate(errors.Wrap(err, "hash signers"))
+	}
+	hash := sha256.Sum256(s.Sum(nil))
+
+	if !requestData.Signature.Verify(hash[:], user.PublicKey) {
 		return translate(errors.Wrap(err, "validate sig"))
 	}
 
@@ -195,7 +198,7 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 	}
 
 	response := struct {
-		UserID string `json:"user_id"`
+		UserID uuid.UUID `json:"user_id"`
 	}{
 		UserID: userID,
 	}

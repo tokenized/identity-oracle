@@ -7,10 +7,8 @@ import (
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/logger"
-
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/pkg/errors"
@@ -108,14 +106,14 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 	}
 
 	response := struct {
-		Approved     bool   `json:"approved"`
-		SigAlgorithm uint32 `json:"algorithm"`
-		Sig          string `json:"signature"`
-		BlockHeight  uint32 `json:"block_height"`
+		Approved     bool              `json:"approved"`
+		SigAlgorithm uint32            `json:"algorithm"`
+		Sig          bitcoin.Signature `json:"signature"`
+		BlockHeight  uint32            `json:"block_height"`
 	}{
 		Approved:     approved,
 		SigAlgorithm: 1,
-		Sig:          sig.String(),
+		Sig:          sig,
 		BlockHeight:  height,
 	}
 

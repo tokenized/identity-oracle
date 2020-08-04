@@ -3,11 +3,11 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/logger"
 
@@ -17,11 +17,13 @@ import (
 
 // Transfer provides support for transferring bitcoin and tokens.
 type Transfers struct {
-	Config       *web.Config
-	MasterDB     *db.DB
-	Key          bitcoin.Key
-	BlockHandler *oracle.BlockHandler
-	Approver     oracle.ApproverInterface
+	Config                    *web.Config
+	MasterDB                  *db.DB
+	Key                       bitcoin.Key
+	BlockHandler              *oracle.BlockHandler
+	ExpirationDurationSeconds int
+
+	Approver oracle.ApproverInterface
 }
 
 // TransferSignature returns an approve/deny signature for a transfer receiver.
@@ -36,7 +38,6 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		Index    uint32               `json:"index"`
 		Contract string               `json:"contract" validate:"required"`
 		AssetID  string               `json:"asset_id" validate:"required"`
-		Quantity uint64               `json:"quantity"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
@@ -60,22 +61,18 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	if t.Approver != nil {
 		var approveErr error
 		approved, description, approveErr = t.Approver.ApproveTransfer(ctx, requestData.Contract,
-			requestData.AssetID, requestData.Quantity, user.ID)
+			requestData.AssetID, user.ID)
 		if approveErr != nil {
 			return translate(errors.Wrap(err, "approver"))
 		}
 	}
 
-	// Dev reject testing
-	if t.Config.RejectQuantity != 0 && t.Config.RejectQuantity == requestData.Quantity {
-		approved = false
-		description = "test reject quantity"
-	}
+	expiration := uint64(time.Now().Add(time.Duration(t.ExpirationDurationSeconds) * time.Second).UnixNano())
 
 	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
-	sigHash, height, hash, err := oracle.CreateReceiveSignature(ctx, dbConn, t.BlockHandler,
-		requestData.Contract, requestData.AssetID, requestData.XPubs, requestData.Index,
-		requestData.Quantity, approved)
+	sigHash, height, hash, err := oracle.CreateReceiveSignature(ctx, dbConn,
+		t.BlockHandler, requestData.Contract, requestData.AssetID, requestData.XPubs,
+		requestData.Index, expiration, approved)
 	if err != nil {
 		return translate(errors.Wrap(err, "approve transfer"))
 	}
@@ -86,19 +83,21 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	}
 
 	response := struct {
-		Approved     bool           `json:"approved"`
-		Description  string         `json:"description"`
-		SigAlgorithm uint32         `json:"algorithm"`
-		Sig          string         `json:"signature"`
-		BlockHeight  uint32         `json:"block_height"`
-		BlockHash    bitcoin.Hash32 `json:"block_hash"`
+		Approved     bool              `json:"approved"`
+		Description  string            `json:"description"`
+		SigAlgorithm uint32            `json:"algorithm"`
+		Sig          bitcoin.Signature `json:"signature"`
+		BlockHeight  uint32            `json:"block_height"`
+		BlockHash    bitcoin.Hash32    `json:"block_hash"`
+		Expiration   uint64            `json:"expiration"`
 	}{
 		Approved:     approved,
 		Description:  description,
 		SigAlgorithm: 1,
-		Sig:          sig.String(),
+		Sig:          sig,
 		BlockHeight:  height,
 		BlockHash:    hash,
+		Expiration:   expiration,
 	}
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)

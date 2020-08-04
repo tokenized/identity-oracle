@@ -10,9 +10,12 @@ get:
           schema:
             type: object
             properties:
-              entity:
+              contract_address:
                 type: string
+                description: Bitcoin address of smart contract agent that defines the identity oracle.
               url:
                 type: string
               public_key:
+                type: string
+              entity:
                 type: string

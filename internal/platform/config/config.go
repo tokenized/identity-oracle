@@ -14,9 +14,9 @@ import (
 type Config struct {
 	Env    string `envconfig:"ENV" json:"ENV"`
 	Oracle struct {
-		Key        string `envconfig:"KEY" json:"KEY"`
-		Entity     string `envconfig:"ENTITY" json:"ENTITY"`
-		EntityFile string `envconfig:"ENTITY_FILE" json:"ENTITY_FILE"`
+		Key                       string `envconfig:"KEY" json:"KEY"`
+		ContractAddress           string `envconfig:"CONTRACT_ADDRESS" json:"CONTRACT_ADDRESS"`
+		ExpirationDurationSeconds int    `default:"21600" envconfig:"EXPIRATION_DURATION_SECONDS" json:"EXPIRATION_DURATION_SECONDS"`
 	}
 	Web struct {
 		RootURL         string        `envconfig:"ROOT_URL" json:"ROOT_URL"`

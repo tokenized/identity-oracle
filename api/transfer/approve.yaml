@@ -16,8 +16,6 @@ post:
               type: string
             asset_id:
               type: string
-            quantity:
-              type: number
 
   responses:
     200:

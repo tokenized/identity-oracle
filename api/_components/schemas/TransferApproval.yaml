@@ -21,3 +21,6 @@ properties:
       block_hash:
         type: string
         example: "000000000000000001b4388ba4eb08fc5bcdfd3a8e4b3f566a6de4eebd019cb3"
+      expiration:
+        type: number
+        description: The number of nano-seconds since the Unix Epoch until the signature expires.

@@ -4,9 +4,7 @@ import (
 	"context"
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
-
 	"github.com/tokenized/pkg/bitcoin"
-
 	"github.com/tokenized/specification/dist/golang/actions"
 	"github.com/tokenized/specification/dist/golang/protocol"
 

@@ -7,7 +7,6 @@ import (
 
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/logger"
-	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/dimfeld/httptreemux"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
@@ -34,15 +33,6 @@ type Config struct {
 	RootURL string
 	Net     bitcoin.Network
 	IsTest  bool
-
-	// The maximum number of addresses that will be reserved without being touched.
-	ReserveMax int
-
-	// Identification of oracle operator
-	Entity actions.EntityField
-
-	// Quantity to test intentional rejection in test environments.
-	RejectQuantity uint64
 }
 
 // New creates an App value that handle a set of routes for the application.

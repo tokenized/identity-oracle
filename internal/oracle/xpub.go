@@ -5,8 +5,9 @@ import (
 	"errors"
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
-
 	"github.com/tokenized/pkg/bitcoin"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -24,7 +25,7 @@ var (
 )
 
 // CreateXPub inserts an extended public key into the database.
-func CreateXPub(ctx context.Context, dbConn *db.DB, xpub XPub) error {
+func CreateXPub(ctx context.Context, dbConn *db.DB, xpub *XPub) error {
 	sql := `INSERT
 		INTO xpubs (
 			id,
@@ -35,6 +36,8 @@ func CreateXPub(ctx context.Context, dbConn *db.DB, xpub XPub) error {
 		)
 		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT ON CONSTRAINT xpubs_unique DO NOTHING`
+
+	xpub.ID = uuid.New()
 
 	if err := dbConn.Execute(ctx, sql,
 		xpub.ID,
@@ -63,14 +66,14 @@ func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKe
 	return result, err
 }
 
-func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (string, error) {
+func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (uuid.UUID, error) {
 	sql := `SELECT user_id
 		FROM
 			xpubs
 		WHERE
 			xpubs.xpub = ?`
 
-	var result string
+	var result uuid.UUID
 	err := dbConn.Get(ctx, &result, sql, xpub)
 	if err == db.ErrNotFound {
 		err = ErrXPubNotFound

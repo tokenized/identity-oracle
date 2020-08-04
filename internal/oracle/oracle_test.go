@@ -5,13 +5,10 @@ import (
 	"time"
 
 	"github.com/tokenized/identity-oracle/internal/platform/tests"
-
 	"github.com/tokenized/pkg/bitcoin"
-
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/uuid"
 )
 
 func TestUsers(t *testing.T) {
@@ -33,8 +30,7 @@ func TestUsers(t *testing.T) {
 		t.Fatalf("Failed to serialize user entity : %s", err)
 	}
 
-	user := User{
-		ID:           uuid.New().String(),
+	user := &User{
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),
 		DateCreated:  time.Now(),
@@ -75,8 +71,7 @@ func TestXPub(t *testing.T) {
 		t.Fatalf("Failed to serialize user entity : %s", err)
 	}
 
-	user := User{
-		ID:           uuid.New().String(),
+	user := &User{
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),
 		DateCreated:  time.Now(),
@@ -95,8 +90,7 @@ func TestXPub(t *testing.T) {
 
 	xpubs := bitcoin.ExtendedKeys{xp}
 
-	xpub := XPub{
-		ID:              uuid.New().String(),
+	xpub := &XPub{
 		UserID:          user.ID,
 		XPub:            xpubs,
 		RequiredSigners: 1,
