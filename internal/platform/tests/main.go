@@ -9,7 +9,6 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/config"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-
 	"github.com/tokenized/pkg/bitcoin"
 
 	"github.com/google/uuid"

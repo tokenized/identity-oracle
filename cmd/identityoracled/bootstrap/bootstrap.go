@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -17,9 +15,6 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/config"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-
-	"github.com/tokenized/specification/dist/golang/actions"
-
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/logger"
 	"github.com/tokenized/pkg/spynode"
@@ -35,9 +30,17 @@ func Run(approver oracle.ApproverInterface) {
 
 	var logConfig *logger.Config
 	if strings.ToUpper(os.Getenv("DEVELOPMENT")) == "TRUE" {
-		logConfig = logger.NewDevelopmentConfig()
+		if strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT" {
+			logConfig = logger.NewDevelopmentTextConfig()
+		} else {
+			logConfig = logger.NewDevelopmentConfig()
+		}
 	} else {
-		logConfig = logger.NewProductionConfig()
+		if strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT" {
+			logConfig = logger.NewProductionTextConfig()
+		} else {
+			logConfig = logger.NewProductionConfig()
+		}
 	}
 
 	logFileName := os.Getenv("LOG_FILE_PATH")
@@ -47,16 +50,9 @@ func Run(approver oracle.ApproverInterface) {
 			return
 		}
 	}
-	logConfig.Main.Format |= logger.IncludeSystem
-
-	if strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT" {
-		logConfig.IsText = true
-	}
 
 	logConfig.EnableSubSystem(spynode.SubSystem)
-	if strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT" {
-		logConfig.IsText = true
-	}
+
 	ctx := logger.ContextWithLogConfig(context.Background(), logConfig)
 
 	log := logger.NewLoggerObject(ctx)
@@ -85,33 +81,18 @@ func Run(approver oracle.ApproverInterface) {
 
 	// ---------------------------------------------------------------------------------------------
 	// Signing Key
+
 	key, err := bitcoin.KeyFromStr(cfg.Oracle.Key)
 	if err != nil {
 		log.Fatalf("main : Reading key : %v", err)
 	}
 
 	// ---------------------------------------------------------------------------------------------
-	// Entity
+	// Contract Address
 
-	var entity actions.EntityField
-	if len(cfg.Oracle.Entity) > 0 {
-		// Put json data into opReturn struct
-		if err := json.Unmarshal([]byte(cfg.Oracle.Entity), &entity); err != nil {
-			log.Printf("Failed to unmarshal entity json : %s\n", err)
-			return
-		}
-	} else if len(cfg.Oracle.EntityFile) > 0 {
-		data, err := ioutil.ReadFile(filepath.FromSlash(cfg.Oracle.EntityFile))
-		if err != nil {
-			log.Printf("Failed to read entity json file : %s\n", err)
-			return
-		}
-
-		// Put json data into opReturn struct
-		if err := json.Unmarshal(data, &entity); err != nil {
-			log.Printf("Failed to unmarshal entity json file : %s\n", err)
-			return
-		}
+	contractAddress, err := bitcoin.DecodeAddress(cfg.Oracle.ContractAddress)
+	if err != nil {
+		log.Fatalf("main : Invalid contract address : %s", err)
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -171,22 +152,15 @@ func Run(approver oracle.ApproverInterface) {
 		RootURL: cfg.Web.RootURL,
 		Net:     bitcoin.NetworkFromString(cfg.Bitcoin.Network),
 		IsTest:  cfg.Bitcoin.IsTest,
-		Entity:  entity,
-	}
-
-	if len(cfg.Env) != 0 && cfg.Env != "prod" { // all environments except production
-		log.Printf("main : Configuring test values")
-		webConfig.RejectQuantity = 256
-	}
-
-	if webConfig.RejectQuantity != 0 {
-		log.Printf("main : Test RejectQuantity %d", webConfig.RejectQuantity)
 	}
 
 	// ---------------------------------------------------------------------------------------------
 	// Start API Service
 
-	webHandler := handlers.API(log, webConfig, masterDB, key, blockHandler, approver)
+	ra := bitcoin.NewRawAddressFromAddress(contractAddress)
+
+	webHandler := handlers.API(log, webConfig, masterDB, key, ra, blockHandler,
+		cfg.Oracle.ExpirationDurationSeconds, approver)
 
 	api := http.Server{
 		Addr:           cfg.Web.APIHost,

@@ -4,10 +4,12 @@ import (
 	"time"
 
 	"github.com/tokenized/pkg/bitcoin"
+
+	"github.com/google/uuid"
 )
 
 type User struct {
-	ID           string            `db:"id" json:"id"`
+	ID           uuid.UUID         `db:"id" json:"id"`
 	Entity       []byte            `db:"entity" json:"entity"`
 	PublicKey    bitcoin.PublicKey `db:"public_key" json:"public_key"`
 	DateCreated  time.Time         `db:"date_created" json:"date_created"`
@@ -17,8 +19,8 @@ type User struct {
 }
 
 type XPub struct {
-	ID              string               `db:"id" json:"id"`
-	UserID          string               `db:"user_id" json:"user_id"`
+	ID              uuid.UUID            `db:"id" json:"id"`
+	UserID          uuid.UUID            `db:"user_id" json:"user_id"`
 	XPub            bitcoin.ExtendedKeys `db:"xpub" json:"xpub"`
 	RequiredSigners int                  `json:"required_signers" db:"required_signers"`
 	DateCreated     time.Time            `db:"date_created" json:"date_created"`

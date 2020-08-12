@@ -4,9 +4,7 @@ import (
 	"context"
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
-
 	"github.com/tokenized/pkg/bitcoin"
-
 	"github.com/tokenized/specification/dist/golang/protocol"
 
 	"github.com/pkg/errors"
@@ -19,7 +17,7 @@ import (
 //   bitcoin.Hash32 - block hash included in signature hash
 //   bool - true if transfer is approved
 func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
-	contract, asset string, xpub bitcoin.ExtendedKeys, index uint32, quantity uint64,
+	contract, asset string, xpubs bitcoin.ExtendedKeys, index uint32, expiration uint64,
 	approved bool) ([]byte, uint32, bitcoin.Hash32, error) {
 
 	_, assetCode, err := protocol.DecodeAssetID(asset)
@@ -29,7 +27,7 @@ func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, blockHandler *Bl
 
 	// TODO Get contract and asset
 
-	xpubData, err := FetchXPubByXPub(ctx, dbConn, xpub)
+	xpubData, err := FetchXPubByXPub(ctx, dbConn, xpubs)
 	if err != nil {
 		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "fetch xpub")
 	}
@@ -52,7 +50,7 @@ func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, blockHandler *Bl
 	}
 
 	// Generate address at index
-	addressKey, err := xpub.ChildKeys(index)
+	addressKey, err := xpubs.ChildKeys(index)
 	if err != nil {
 		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate address key")
 	}
@@ -63,7 +61,7 @@ func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, blockHandler *Bl
 	}
 
 	sigHash, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, assetCode.Bytes(),
-		receiveAddress, quantity, &blockHash, approveValue)
+		receiveAddress, &blockHash, expiration, approveValue)
 	if err != nil {
 		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate signature")
 	}

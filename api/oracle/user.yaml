@@ -1,6 +1,6 @@
 post:
   tags: [oracle]
-  summary: Requests a user id associated with a specified xpub.
+  summary: Requests a user id be associated with a specified xpub.
   requestBody:
     required: true
     content:

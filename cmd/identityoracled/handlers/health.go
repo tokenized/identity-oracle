@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-
 	"github.com/tokenized/pkg/logger"
 )
 

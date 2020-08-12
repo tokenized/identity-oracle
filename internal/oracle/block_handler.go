@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
-
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/logger"
 	"github.com/tokenized/pkg/spynode/handlers"

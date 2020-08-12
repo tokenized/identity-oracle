@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"net/http"
 	"testing"
@@ -10,9 +12,7 @@ import (
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/tests"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-
 	"github.com/tokenized/pkg/bitcoin"
-
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/golang/protobuf/proto"
@@ -76,16 +76,18 @@ func TestRegister(t *testing.T) {
 	}
 
 	var responseData struct {
-		Status string `json:"status"`
-		UserID string `json:"user_id"`
+		Data struct {
+			Status string    `json:"status"`
+			UserID uuid.UUID `json:"user_id"`
+		}
 	}
 
 	if err := web.Unmarshal(&response.buffer, &responseData); err != nil {
 		t.Fatalf("Failed to unmarshal response : %s", err)
 	}
 
-	t.Logf("Status  : %s", responseData.Status)
-	t.Logf("User ID : %s", responseData.UserID)
+	t.Logf("Status  : %s", responseData.Data.Status)
+	t.Logf("User ID : %s", responseData.Data.UserID)
 }
 
 func TestAddXPub(t *testing.T) {
@@ -117,8 +119,7 @@ func TestAddXPub(t *testing.T) {
 		t.Fatalf("Failed to serialize user entity : %s", err)
 	}
 
-	user := oracle.User{
-		ID:           uuid.New().String(),
+	user := &oracle.User{
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),
 		DateCreated:  time.Now(),
@@ -138,7 +139,7 @@ func TestAddXPub(t *testing.T) {
 	xkeys := bitcoin.ExtendedKeys{xkey}
 
 	requestData := struct {
-		UserID          string               `json:"user_id" validate:"required"`
+		UserID          uuid.UUID            `json:"user_id" validate:"required"`
 		XPubs           bitcoin.ExtendedKeys `json:"xpubs" validate:"required"` // hex
 		RequiredSigners int                  `json:"required_signers" validate:"required"`
 		Signature       bitcoin.Signature    `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
@@ -148,9 +149,15 @@ func TestAddXPub(t *testing.T) {
 		RequiredSigners: 1,
 	}
 
-	hash := bitcoin.DoubleSha256([]byte(user.ID + requestData.XPubs.String()))
+	s := sha256.New()
+	s.Write(requestData.UserID[:])
+	s.Write(requestData.XPubs.Bytes())
+	if err := binary.Write(s, binary.LittleEndian, uint32(requestData.RequiredSigners)); err != nil {
+		t.Fatalf("Failed to hash required signers : %s", err)
+	}
+	hash := sha256.Sum256(s.Sum(nil))
 
-	requestData.Signature, err = key.Sign(hash)
+	requestData.Signature, err = key.Sign(hash[:])
 	if err != nil {
 		t.Fatalf("Failed to generate signature : %s", err)
 	}
