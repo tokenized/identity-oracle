@@ -160,7 +160,8 @@ func Run(approver oracle.ApproverInterface) {
 	ra := bitcoin.NewRawAddressFromAddress(contractAddress)
 
 	webHandler := handlers.API(log, webConfig, masterDB, key, ra, blockHandler,
-		cfg.Oracle.ExpirationDurationSeconds, approver)
+		cfg.Oracle.TransferExpirationDurationSeconds, cfg.Oracle.IdentityExpirationDurationSeconds,
+		approver)
 
 	api := http.Server{
 		Addr:           cfg.Web.APIHost,

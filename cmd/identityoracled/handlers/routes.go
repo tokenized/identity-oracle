@@ -14,7 +14,8 @@ import (
 // API returns a handler for a set of routes.
 func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
 	contractAddress bitcoin.RawAddress, blockHandler *oracle.BlockHandler,
-	expirationDurationSeconds int, approver oracle.ApproverInterface) http.Handler {
+	transferExpirationDurationSeconds, identityExpirationDurationSeconds int,
+	approver oracle.ApproverInterface) http.Handler {
 
 	app := web.New(config, log, mid.RequestLogger, mid.Metrics, mid.ErrorHandler, mid.CORS)
 
@@ -37,24 +38,26 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 	app.Handle("POST", "/oracle/user", oh.User)
 
 	th := Transfers{
-		Config:                    config,
-		MasterDB:                  masterDB,
-		Key:                       key,
-		BlockHandler:              blockHandler,
-		ExpirationDurationSeconds: expirationDurationSeconds,
-		Approver:                  approver,
+		Config:                            config,
+		MasterDB:                          masterDB,
+		Key:                               key,
+		BlockHandler:                      blockHandler,
+		TransferExpirationDurationSeconds: transferExpirationDurationSeconds,
+		Approver:                          approver,
 	}
 	app.Handle("POST", "/transfer/approve", th.TransferSignature)
 
 	vh := Verify{
-		Config:       config,
-		MasterDB:     masterDB,
-		Key:          key,
-		BlockHandler: blockHandler,
-		Approver:     approver,
+		Config:                            config,
+		MasterDB:                          masterDB,
+		Key:                               key,
+		BlockHandler:                      blockHandler,
+		IdentityExpirationDurationSeconds: identityExpirationDurationSeconds,
+		Approver:                          approver,
 	}
 	app.Handle("POST", "/identity/verifyPubKey", vh.PubKeySignature)
 	app.Handle("POST", "/identity/verifyXPub", vh.XPubSignature)
+	app.Handle("POST", "/identity/verifyAdmin", vh.AdminCertificate)
 
 	return app
 }

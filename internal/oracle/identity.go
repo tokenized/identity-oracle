@@ -45,7 +45,7 @@ func VerifyPubKey(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler
 
 	pubKey := xpubKey.PublicKey()
 
-	sig, err := protocol.EntityPubKeyOracleSigHash(ctx, entity, pubKey, &blockHash, approve)
+	sig, err := protocol.EntityPubKeyOracleSigHash(ctx, entity, pubKey, blockHash, approve)
 	if err != nil {
 		return nil, 0, false, errors.Wrap(err, "generate signature")
 	}
@@ -78,7 +78,7 @@ func VerifyXPub(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
 		return nil, 0, false, errors.Wrap(err, "get sig block hash")
 	}
 
-	sig, err := protocol.EntityXPubOracleSigHash(ctx, entity, xpub, &blockHash, approve)
+	sig, err := protocol.EntityXPubOracleSigHash(ctx, entity, xpub, blockHash, approve)
 	if err != nil {
 		return nil, 0, false, errors.Wrap(err, "generate signature")
 	}

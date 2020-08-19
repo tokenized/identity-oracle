@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
@@ -17,11 +18,12 @@ import (
 
 // Verify provides support for providing signatures to prove identity.
 type Verify struct {
-	Config       *web.Config
-	MasterDB     *db.DB
-	Key          bitcoin.Key
-	BlockHandler *oracle.BlockHandler
-	Approver     oracle.ApproverInterface
+	Config                            *web.Config
+	MasterDB                          *db.DB
+	Key                               bitcoin.Key
+	BlockHandler                      *oracle.BlockHandler
+	Approver                          oracle.ApproverInterface
+	IdentityExpirationDurationSeconds int
 }
 
 // PubKeySignature returns an approve/deny signature for an association between an entity and a
@@ -115,6 +117,83 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 		SigAlgorithm: 1,
 		Sig:          sig,
 		BlockHeight:  height,
+	}
+
+	web.RespondData(ctx, log, w, response, http.StatusOK)
+	return nil
+}
+
+// AdminCertificate returns a certificate verifying that the contract admin address belongs to the
+// Issuer entity or entity contract address.
+func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+	r *http.Request, params map[string]string) error {
+
+	ctx, span := trace.StartSpan(ctx, "handlers.Verify.AdminCertificate")
+	defer span.End()
+
+	var requestData struct {
+		XPubs    bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
+		Index    uint32               `json:"index" validate:"required"`
+		Issuer   actions.EntityField  `json:"issuer"`
+		Contract bitcoin.RawAddress   `json:"entity_contract"`
+	}
+
+	if err := web.Unmarshal(r.Body, &requestData); err != nil {
+		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	dbConn := v.MasterDB.Copy()
+	defer dbConn.Close()
+
+	user, err := oracle.FetchUserByXPub(ctx, dbConn, requestData.XPubs)
+	if err != nil {
+		if errors.Cause(err) == oracle.ErrXPubNotFound {
+			web.RespondError(ctx, log, w, err, http.StatusNotFound)
+			return nil
+		}
+		return translate(errors.Wrap(err, "fetch user"))
+	}
+
+	approved := true
+	var description string
+	if v.Approver != nil {
+		var approveErr error
+		approved, description, approveErr = v.Approver.ApproveAdmin(ctx, requestData.Issuer,
+			requestData.Contract, user.ID)
+		if approveErr != nil {
+			return translate(errors.Wrap(err, "approver"))
+		}
+	}
+
+	expiration := uint64(time.Now().Add(time.Duration(v.IdentityExpirationDurationSeconds) * time.Second).UnixNano())
+
+	// Verify that the public key is associated with the entity.
+	sigHash, height, hash, err := oracle.CreateAdminCertificate(ctx, dbConn, v.BlockHandler,
+		requestData.XPubs, requestData.Index, requestData.Issuer, requestData.Contract, expiration,
+		approved)
+	if err != nil {
+		return translate(errors.Wrap(err, "verify admin"))
+	}
+
+	sig, err := v.Key.Sign(sigHash[:])
+	if err != nil {
+		return translate(errors.Wrap(err, "sign"))
+	}
+
+	response := struct {
+		Approved    bool              `json:"approved"`
+		Description string            `json:"description"`
+		Signature   bitcoin.Signature `json:"signature"`
+		BlockHeight uint32            `json:"block_height"`
+		BlockHash   bitcoin.Hash32    `json:"block_hash"`
+		Expiration  uint64            `json:"expiration"`
+	}{
+		Approved:    approved,
+		Description: description,
+		Signature:   sig,
+		BlockHeight: height,
+		BlockHash:   hash,
+		Expiration:  expiration,
 	}
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)
