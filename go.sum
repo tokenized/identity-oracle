@@ -11,13 +11,16 @@ github.com/aws/aws-sdk-go v1.31.6 h1:nKjQbpXhdImctBh1e0iLg9iQW/X297LPPuY/9f92R2k
 github.com/aws/aws-sdk-go v1.31.6/go.mod h1:5zCpMtNQVjRREroY7sYe8lOMRSxkhG6MZveU8YkpAk0=
 github.com/btcsuite/btcd v0.20.1-beta h1:Ik4hyJqN8Jfyv3S4AGBOmyouMsYE3EdYODkMbQjwPGw=
 github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
+github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f h1:bAs4lUbRJpnnkd9VhRV3jjAVU7DJVjMaK+IsvSeZvFo=
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f/go.mod h1:TdznJufoqS23FtqVCzL0ZqgP5MqXbb4fg/WgDys70nA=
 github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d/go.mod h1:+5NJ2+qvTyV9exUAL/rxXi3DcLg2Ts+ymUAY5y4NvMg=
 github.com/btcsuite/btcutil v1.0.2 h1:9iZ1Terx9fMIOtq1VrwdqfsATL9MC2l8ZrUY6YZ2uts=
 github.com/btcsuite/btcutil v1.0.2/go.mod h1:j9HUFwoQRsZL3V4n+qG+CUnEGHOarIxfC3Le2Yhbcts=
+github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd h1:R/opQEbFEy9JGkIguV40SvRY1uliPX8ifOvi6ICsFCw=
 github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd/go.mod h1:HHNXQzUsZCxOoE+CPiyCTO6x34Zs86zZUiwtpXoGdtg=
 github.com/btcsuite/goleveldb v0.0.0-20160330041536-7834afc9e8cd/go.mod h1:F+uVaaLLH7j4eDXPRvw78tMflu7Ie2bzYOH4Y8rRKBY=
 github.com/btcsuite/snappy-go v0.0.0-20151229074030-0bdef8d06723/go.mod h1:8woku9dyThutzjeg+3xrA5iCpBRH8XEEg3lh6TiUghc=
+github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 h1:R8vQdOQdZ9Y3SkEwmHoWBmX1DNXhXZqlTpq6s4tyJGc=
 github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792/go.mod h1:ghJtEyQwv5/p4Mg4C0fgbePVuGr935/5ddU9Z3TmDRY=
 github.com/btcsuite/winsvc v1.0.0/go.mod h1:jsenWakMcC0zFBFurPLEAyrnc/teJEM1O46fmI40EZs=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
@@ -129,6 +132,10 @@ github.com/tokenized/smart-contract v0.2.3-0.20200825212000-6cce33ad5a10 h1:8j4h
 github.com/tokenized/smart-contract v0.2.3-0.20200825212000-6cce33ad5a10/go.mod h1:CIkfWFZOJoj8BF5ahA/rFIOSM5LiYPdN0ZNz2NJA+Xw=
 github.com/tokenized/smart-contract v0.2.3-0.20200826033116-1fcf26d9c7a6 h1:MlZu6BEeRO43EOW/g6m4nHGHPZ6372PJQ2oJ7iKhkh4=
 github.com/tokenized/smart-contract v0.2.3-0.20200826033116-1fcf26d9c7a6/go.mod h1:isK/9/4Cmpvzojr77RbfwNsFaZGpJxYBvGhlpjhy9Qg=
+github.com/tokenized/smart-contract v0.2.3-0.20200826230125-9f7f1c3518c9 h1:m+zJWWAVLrWK+TsQYg7J4lV+BjXKvj+xzdIJkSD7Twc=
+github.com/tokenized/smart-contract v0.2.3-0.20200826230125-9f7f1c3518c9/go.mod h1:isK/9/4Cmpvzojr77RbfwNsFaZGpJxYBvGhlpjhy9Qg=
+github.com/tokenized/smart-contract v0.2.3-0.20200827024805-87f270c6707e h1:H2/ElorXD9qO/LzV2qRL0ewTlLclYdH93dPLPMGyybA=
+github.com/tokenized/smart-contract v0.2.3-0.20200827024805-87f270c6707e/go.mod h1:isK/9/4Cmpvzojr77RbfwNsFaZGpJxYBvGhlpjhy9Qg=
 github.com/tokenized/specification v0.2.3-0.20200804025755-9b975b7c5699 h1:sgGVFDzxeR8HozEotipe9pBHvko0SyOhLRD1A7+pj7U=
 github.com/tokenized/specification v0.2.3-0.20200804025755-9b975b7c5699/go.mod h1:tAvJZi2Z1kdNq3RtZr8rUBBMXRKOinZi6EnUwnbm7sc=
 github.com/tokenized/specification v0.2.3-0.20200825043423-6bd28278874a h1:XPRHtQzweURqvfvp+sDYdgQFIjsXiX5Hdn2AzQYczkg=

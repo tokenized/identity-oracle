@@ -12,7 +12,7 @@ require (
 	github.com/lib/pq v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/tokenized/pkg v0.0.0-20200826024415-a8631a76075d
-	github.com/tokenized/smart-contract v0.2.3-0.20200826033116-1fcf26d9c7a6 // indirect
+	github.com/tokenized/smart-contract v0.2.3-0.20200827024805-87f270c6707e
 	github.com/tokenized/specification v0.2.3-0.20200825043423-6bd28278874a
 	go.opencensus.io v0.22.2
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect

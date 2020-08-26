@@ -119,28 +119,10 @@ func (bh *BlockHandler) HandleBlock(ctx context.Context, msgType int, block *han
 }
 
 func (bh *BlockHandler) HandleTx(ctx context.Context, tx *wire.MsgTx) (bool, error) {
-	bh.Log.Printf("Tx : %s\n", tx.TxHash().String())
-	return true, nil
+	return false, nil
 }
 
 func (bh *BlockHandler) HandleTxState(ctx context.Context, msgType int, txid bitcoin.Hash32) error {
-	switch msgType {
-	case handlers.ListenerMsgTxStateSafe:
-		bh.Log.Printf("Tx safe : %s\n", txid.String())
-
-	case handlers.ListenerMsgTxStateConfirm:
-		bh.Log.Printf("Tx confirm : %s\n", txid.String())
-
-	case handlers.ListenerMsgTxStateCancel:
-		bh.Log.Printf("Tx cancel : %s\n", txid.String())
-
-	case handlers.ListenerMsgTxStateUnsafe:
-		bh.Log.Printf("Tx unsafe : %s\n", txid.String())
-
-	case handlers.ListenerMsgTxStateRevert:
-		bh.Log.Printf("Tx revert : %s\n", txid.String())
-
-	}
 	return nil
 }
 

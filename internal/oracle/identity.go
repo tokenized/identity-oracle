@@ -100,9 +100,10 @@ func VerifyXPub(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
 //   uint32 - block height of block hash included in signature hash
 //   bitcoin.Hash32 - block hash included in signature hash
 //   bool - true if approved
-func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
-	xpubs bitcoin.ExtendedKeys, index uint32, issuer actions.EntityField,
-	entityContract bitcoin.RawAddress, expiration uint64) ([]byte, uint32, bool, string, error) {
+func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, isTest bool,
+	blockHandler *BlockHandler, xpubs bitcoin.ExtendedKeys, index uint32,
+	issuer actions.EntityField, entityContract bitcoin.RawAddress,
+	expiration uint64) ([]byte, uint32, bool, string, error) {
 
 	user, err := FetchUserByXPub(ctx, dbConn, xpubs)
 	if err != nil {
@@ -151,8 +152,17 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, blockHandler *Bl
 	} else {
 		entity = entityContract
 
-		// Verify the contract belongs to the user. --ce
+		// Verify the contract belongs to the user.
+		cf, err := GetContractFormation(ctx, dbConn, entityContract, isTest)
+		if err != nil {
+			return nil, 0, false, "", errors.Wrap(err, "get contract formation")
+		}
 
+		if err := VerifyEntityIsSubset(cf.Issuer, userEntity); err != nil {
+			description = err.Error()
+			approved = false
+			approve = 0
+		}
 	}
 
 	sigHash, err := protocol.ContractAdminIdentityOracleSigHash(ctx, adminAddress, entity,

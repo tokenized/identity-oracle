@@ -153,7 +153,7 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 
 	// Verify that the public key is associated with the entity.
 	sigHash, height, approved, description, err := oracle.CreateAdminCertificate(ctx, dbConn,
-		v.BlockHandler, requestData.XPubs, requestData.Index, requestData.Issuer,
+		v.Config.IsTest, v.BlockHandler, requestData.XPubs, requestData.Index, requestData.Issuer,
 		requestData.Contract, expiration)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify admin"))

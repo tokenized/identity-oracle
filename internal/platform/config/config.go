@@ -56,6 +56,13 @@ type Config struct {
 		Bucket    string `default:"standalone" envconfig:"NODE_STORAGE_BUCKET"`
 		Root      string `default:"./tmp" envconfig:"NODE_STORAGE_ROOT"`
 	}
+	RpcNode struct {
+		Host       string `envconfig:"RPC_HOST" json:"RPC_HOST"`
+		Username   string `envconfig:"RPC_USERNAME" json:"RPC_USERNAME"`
+		Password   string `envconfig:"RPC_PASSWORD" json:"RPC_PASSWORD"`
+		MaxRetries int    `default:"10" envconfig:"RPC_MAX_RETRIES"`
+		RetryDelay int    `default:"2000" envconfig:"RPC_RETRY_DELAY"`
+	}
 }
 
 // unmarshalNested applies JSON configuration
@@ -71,6 +78,7 @@ func unmarshalNested(data []byte, cfg *Config) error {
 	err = json.Unmarshal(data, &cfg.Storage)
 	err = json.Unmarshal(data, &cfg.SpyNode)
 	err = json.Unmarshal(data, &cfg.NodeStorage)
+	err = json.Unmarshal(data, &cfg.RpcNode)
 
 	if err != nil {
 		return err
@@ -91,6 +99,9 @@ func SafeConfig(cfg Config) *Config {
 	}
 	if len(cfgSafe.NodeStorage.Secret) > 0 {
 		cfgSafe.NodeStorage.Secret = "*** Masked ***"
+	}
+	if len(cfgSafe.RpcNode.Password) > 0 {
+		cfgSafe.RpcNode.Password = "*** Masked ***"
 	}
 
 	return &cfgSafe
