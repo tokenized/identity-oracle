@@ -5,7 +5,6 @@ import (
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/pkg/bitcoin"
-	"github.com/tokenized/specification/dist/golang/actions"
 	"github.com/tokenized/specification/dist/golang/protocol"
 
 	"github.com/pkg/errors"
@@ -65,58 +64,6 @@ func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, blockHandler *Bl
 		receiveAddress, blockHash, expiration, approveValue)
 	if err != nil {
 		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate signature")
-	}
-
-	return sigHash, height, blockHash, nil
-}
-
-// CreateAdminCertificate creates an admin certificate for contract offers.
-// Returns:
-//   []byte - signature hash
-//   uint32 - block height of block hash included in signature hash
-//   bitcoin.Hash32 - block hash included in signature hash
-//   bool - true if approved
-func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
-	xpubs bitcoin.ExtendedKeys, index uint32, issuer actions.EntityField,
-	entityContract bitcoin.RawAddress, expiration uint64, approved bool) ([]byte, uint32, bitcoin.Hash32, error) {
-
-	xpubData, err := FetchXPubByXPub(ctx, dbConn, xpubs)
-	if err != nil {
-		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "fetch xpub")
-	}
-
-	adminKey, err := xpubs.ChildKeys(index)
-	if err != nil {
-		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate address key")
-	}
-
-	adminAddress, err := adminKey.RawAddress(xpubData.RequiredSigners)
-	if err != nil {
-		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate address")
-	}
-
-	approveValue := uint8(1)
-	if !approved {
-		approveValue = 0
-	}
-
-	// Get block hash for tip - 4
-	blockHash, height, err := blockHandler.SigHash(ctx)
-	if err != nil {
-		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "get sig block hash")
-	}
-
-	var entity interface{}
-	if entityContract.IsEmpty() {
-		entity = issuer
-	} else {
-		entity = entityContract
-	}
-
-	sigHash, err := protocol.ContractAdminIdentityOracleSigHash(ctx, adminAddress, entity,
-		blockHash, expiration, approveValue)
-	if err != nil {
-		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate sig hash")
 	}
 
 	return sigHash, height, blockHash, nil

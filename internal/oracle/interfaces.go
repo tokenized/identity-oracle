@@ -25,14 +25,4 @@ type ApproverInterface interface {
 	// signature will be returned to the user, though it won't indicate approval unless specified.
 	ApproveTransfer(ctx context.Context, contract, assetID string,
 		userID uuid.UUID) (bool, string, error)
-
-	// ApproveAdmin approves the associate of an address with a specified issuer or entity contract.
-	// Returns:
-	//   bool - approved
-	//   string - description of approval or rejection
-	//   error - error
-	// An error aborts the process and returns an error to the user. If error is nil then a
-	// signature will be returned to the user, though it won't indicate approval unless specified.
-	ApproveAdmin(ctx context.Context, issuer actions.EntityField, entityContract bitcoin.RawAddress,
-		userID uuid.UUID) (bool, string, error)
 }

@@ -48,7 +48,7 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 	defer dbConn.Close()
 
 	// Verify that the public key is associated with the entity.
-	sigHash, height, approved, err := oracle.VerifyPubKey(ctx, dbConn, v.BlockHandler,
+	sigHash, height, approved, description, err := oracle.VerifyPubKey(ctx, dbConn, v.BlockHandler,
 		&requestData.Entity, requestData.XPub, requestData.Index)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify pub key"))
@@ -61,11 +61,13 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 
 	response := struct {
 		Approved     bool              `json:"approved"`
+		Description  string            `json:"description"`
 		SigAlgorithm uint32            `json:"algorithm"`
 		Signature    bitcoin.Signature `json:"signature"`
 		BlockHeight  uint32            `json:"block_height"`
 	}{
 		Approved:     approved,
+		Description:  description,
 		SigAlgorithm: 1,
 		Signature:    sig,
 		BlockHeight:  height,
@@ -96,7 +98,7 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 	defer dbConn.Close()
 
 	// Verify that the public key is associated with the entity.
-	sigHash, height, approved, err := oracle.VerifyXPub(ctx, dbConn, v.BlockHandler,
+	sigHash, height, approved, description, err := oracle.VerifyXPub(ctx, dbConn, v.BlockHandler,
 		&requestData.Entity, requestData.XPubs)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify xpub"))
@@ -109,11 +111,13 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 
 	response := struct {
 		Approved     bool              `json:"approved"`
+		Description  string            `json:"description"`
 		SigAlgorithm uint32            `json:"algorithm"`
 		Sig          bitcoin.Signature `json:"signature"`
 		BlockHeight  uint32            `json:"block_height"`
 	}{
 		Approved:     approved,
+		Description:  description,
 		SigAlgorithm: 1,
 		Sig:          sig,
 		BlockHeight:  height,
@@ -145,32 +149,12 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
 
-	user, err := oracle.FetchUserByXPub(ctx, dbConn, requestData.XPubs)
-	if err != nil {
-		if errors.Cause(err) == oracle.ErrXPubNotFound {
-			web.RespondError(ctx, log, w, err, http.StatusNotFound)
-			return nil
-		}
-		return translate(errors.Wrap(err, "fetch user"))
-	}
-
-	approved := true
-	var description string
-	if v.Approver != nil {
-		var approveErr error
-		approved, description, approveErr = v.Approver.ApproveAdmin(ctx, requestData.Issuer,
-			requestData.Contract, user.ID)
-		if approveErr != nil {
-			return translate(errors.Wrap(err, "approver"))
-		}
-	}
-
 	expiration := uint64(time.Now().Add(time.Duration(v.IdentityExpirationDurationSeconds) * time.Second).UnixNano())
 
 	// Verify that the public key is associated with the entity.
-	sigHash, height, hash, err := oracle.CreateAdminCertificate(ctx, dbConn, v.BlockHandler,
-		requestData.XPubs, requestData.Index, requestData.Issuer, requestData.Contract, expiration,
-		approved)
+	sigHash, height, approved, description, err := oracle.CreateAdminCertificate(ctx, dbConn,
+		v.BlockHandler, requestData.XPubs, requestData.Index, requestData.Issuer,
+		requestData.Contract, expiration)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify admin"))
 	}
@@ -185,14 +169,12 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 		Description string            `json:"description"`
 		Signature   bitcoin.Signature `json:"signature"`
 		BlockHeight uint32            `json:"block_height"`
-		BlockHash   bitcoin.Hash32    `json:"block_hash"`
 		Expiration  uint64            `json:"expiration"`
 	}{
 		Approved:    approved,
 		Description: description,
 		Signature:   sig,
 		BlockHeight: height,
-		BlockHash:   hash,
 		Expiration:  expiration,
 	}
 
