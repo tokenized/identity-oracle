@@ -44,6 +44,11 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
+	if requestData.XPub.IsPrivate() {
+		web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+		return nil
+	}
+
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
 
@@ -92,6 +97,13 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	for _, xpub := range requestData.XPubs {
+		if xpub.IsPrivate() {
+			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			return nil
+		}
 	}
 
 	dbConn := v.MasterDB.Copy()
@@ -144,6 +156,13 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	for _, xpub := range requestData.XPubs {
+		if xpub.IsPrivate() {
+			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			return nil
+		}
 	}
 
 	dbConn := v.MasterDB.Copy()

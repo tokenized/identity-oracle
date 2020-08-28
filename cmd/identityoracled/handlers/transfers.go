@@ -44,6 +44,13 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
+	for _, xpub := range requestData.XPubs {
+		if xpub.IsPrivate() {
+			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			return nil
+		}
+	}
+
 	dbConn := t.MasterDB.Copy()
 	defer dbConn.Close()
 

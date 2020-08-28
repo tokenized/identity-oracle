@@ -124,6 +124,13 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
+	for _, xpub := range requestData.XPubs {
+		if xpub.IsPrivate() {
+			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			return nil
+		}
+	}
+
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
 
@@ -184,6 +191,13 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	for _, xpub := range requestData.XPubs {
+		if xpub.IsPrivate() {
+			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			return nil
+		}
 	}
 
 	dbConn := o.MasterDB.Copy()
