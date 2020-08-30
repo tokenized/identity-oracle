@@ -39,48 +39,50 @@ func (cm *ContractsManager) SaveContractFormation(ctx context.Context, ra bitcoi
 
 	// Check for pre-existing
 	b, err := cm.st.Read(ctx, key)
-	if err == nil {
-		// Check timestamp vs current version to ensure we keep the latest.
-		action, err := protocol.Deserialize(b, cm.isTest)
-		if err != nil {
-			// Overwrite invalid contract formation
-			if err := cm.st.Write(ctx, key, script, nil); err != nil {
-				return errors.Wrap(err, "write contract formation")
-			}
-
-			return nil
+	if err != nil {
+		if errors.Cause(err) != storage.ErrNotFound {
+			return errors.Wrap(err, "read contract formation")
 		}
 
-		current, ok := action.(*actions.ContractFormation)
-		if !ok {
-			// Overwrite invalid contract formation
-			if err := cm.st.Write(ctx, key, script, nil); err != nil {
-				return errors.Wrap(err, "write contract formation")
-			}
-
-			return nil
+		// ErrNotFound, First version of this contract formation
+		if err := cm.st.Write(ctx, key, script, nil); err != nil {
+			return errors.Wrap(err, "write contract formation")
 		}
-
-		action, err = protocol.Deserialize(script, cm.isTest)
-		if err != nil {
-			return errors.Wrap(err, "parse contract formation")
-		}
-
-		new, nok := action.(*actions.ContractFormation)
-		if !nok {
-			return errors.Wrap(err, "not contract formation")
-		}
-
-		if current.Timestamp > new.Timestamp {
-			return nil // already have a later version
-		}
-	} else if errors.Cause(err) != storage.ErrNotFound {
-		return errors.Wrap(err, "read contract formation")
 	}
 
-	// First version of this contract formation
-	if err := cm.st.Write(ctx, key, script, nil); err != nil {
-		return errors.Wrap(err, "write contract formation")
+	// Check timestamp vs current version to ensure we keep the latest.
+	action, err := protocol.Deserialize(b, cm.isTest)
+	if err != nil {
+		// Overwrite invalid contract formation
+		if err := cm.st.Write(ctx, key, script, nil); err != nil {
+			return errors.Wrap(err, "write contract formation")
+		}
+
+		return nil
+	}
+
+	current, ok := action.(*actions.ContractFormation)
+	if !ok {
+		// Overwrite invalid contract formation
+		if err := cm.st.Write(ctx, key, script, nil); err != nil {
+			return errors.Wrap(err, "write contract formation")
+		}
+
+		return nil
+	}
+
+	action, err = protocol.Deserialize(script, cm.isTest)
+	if err != nil {
+		return errors.Wrap(err, "parse contract formation")
+	}
+
+	new, nok := action.(*actions.ContractFormation)
+	if !nok {
+		return errors.Wrap(err, "not contract formation")
+	}
+
+	if current.Timestamp > new.Timestamp {
+		return nil // already have a later version
 	}
 
 	return nil

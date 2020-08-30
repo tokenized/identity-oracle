@@ -3,7 +3,6 @@ module github.com/tokenized/identity-oracle
 go 1.12
 
 require (
-	github.com/cmars/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
 	github.com/golang/protobuf v1.4.2
 	github.com/google/uuid v1.1.1
@@ -17,5 +16,4 @@ require (
 	go.opencensus.io v0.22.2
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2
-	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )

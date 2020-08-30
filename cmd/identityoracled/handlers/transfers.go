@@ -74,12 +74,13 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		}
 	}
 
-	expiration := uint64(time.Now().Add(time.Duration(t.TransferExpirationDurationSeconds) * time.Second).UnixNano())
+	expiration := uint64(time.Now().Add(time.Duration(t.TransferExpirationDurationSeconds) *
+		time.Second).UnixNano())
 
 	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
-	sigHash, height, hash, err := oracle.CreateReceiveSignature(ctx, dbConn,
-		t.BlockHandler, requestData.Contract, requestData.AssetID, requestData.XPubs,
-		requestData.Index, expiration, approved)
+	sigHash, height, hash, err := oracle.CreateReceiveSignature(ctx, dbConn, t.BlockHandler,
+		requestData.Contract, requestData.AssetID, requestData.XPubs, requestData.Index, expiration,
+		approved)
 	if err != nil {
 		return translate(errors.Wrap(err, "approve transfer"))
 	}

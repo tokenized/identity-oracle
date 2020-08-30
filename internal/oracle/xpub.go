@@ -66,7 +66,9 @@ func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpubs bitcoin.ExtendedK
 	return result, err
 }
 
-func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB, xpubs bitcoin.ExtendedKeys) (uuid.UUID, error) {
+func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB,
+	xpubs bitcoin.ExtendedKeys) (uuid.UUID, error) {
+
 	sql := `SELECT user_id
 		FROM
 			xpubs

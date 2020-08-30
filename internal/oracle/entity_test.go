@@ -341,12 +341,16 @@ func TestEntityIsSubset(t *testing.T) {
 				if err != nil {
 					t.Errorf("Entity didn't verify : %s", err)
 				}
+
+				t.Logf("Entity matches")
 			} else {
 				if err == nil {
 					t.Errorf("Entity should not have verified : expected %s", tt.err)
 				} else if err.Error() != tt.err.Error() {
 					t.Errorf("Wrong error : got %s, want %s", err, tt.err)
 				}
+
+				t.Logf("Entity failed with error : %s", err)
 			}
 		})
 	}

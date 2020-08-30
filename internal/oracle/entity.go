@@ -32,7 +32,8 @@ func VerifyEntityIsSubset(sub, full *actions.EntityField) error {
 	if len(sub.SuburbCity) != 0 && sub.SuburbCity != full.SuburbCity {
 		return errors.New("SuburbCity doesn't match")
 	}
-	if len(sub.TerritoryStateProvinceCode) != 0 && sub.TerritoryStateProvinceCode != full.TerritoryStateProvinceCode {
+	if len(sub.TerritoryStateProvinceCode) != 0 && sub.TerritoryStateProvinceCode !=
+		full.TerritoryStateProvinceCode {
 		return errors.New("TerritoryStateProvinceCode doesn't match")
 	}
 	if len(sub.CountryCode) != 0 && sub.CountryCode != full.CountryCode {
@@ -71,7 +72,9 @@ func VerifyEntityIsSubset(sub, full *actions.EntityField) error {
 }
 
 // AdministratorIsInList returns true if the administrator is in the list.
-func AdministratorIsInList(admin *actions.AdministratorField, list []*actions.AdministratorField) bool {
+func AdministratorIsInList(admin *actions.AdministratorField,
+	list []*actions.AdministratorField) bool {
+
 	for _, item := range list {
 		if admin.Type == item.Type && admin.Name == item.Name {
 			return true // found match

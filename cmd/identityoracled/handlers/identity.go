@@ -53,13 +53,13 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 	defer dbConn.Close()
 
 	// Verify that the public key is associated with the entity.
-	sigHash, height, approved, description, err := oracle.VerifyPubKey(ctx, dbConn, v.BlockHandler,
-		&requestData.Entity, requestData.XPub, requestData.Index)
+	sigHash, err := oracle.VerifyPubKey(ctx, dbConn, v.BlockHandler, &requestData.Entity,
+		requestData.XPub, requestData.Index)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify pub key"))
 	}
 
-	sig, err := v.Key.Sign(sigHash[:])
+	sig, err := v.Key.Sign(sigHash.Hash[:])
 	if err != nil {
 		return translate(errors.Wrap(err, "sign"))
 	}
@@ -71,11 +71,11 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 		Signature    bitcoin.Signature `json:"signature"`
 		BlockHeight  uint32            `json:"block_height"`
 	}{
-		Approved:     approved,
-		Description:  description,
+		Approved:     sigHash.Approved,
+		Description:  sigHash.Description,
 		SigAlgorithm: 1,
 		Signature:    sig,
-		BlockHeight:  height,
+		BlockHeight:  sigHash.BlockHeight,
 	}
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)
@@ -110,13 +110,13 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 	defer dbConn.Close()
 
 	// Verify that the public key is associated with the entity.
-	sigHash, height, approved, description, err := oracle.VerifyXPub(ctx, dbConn, v.BlockHandler,
-		&requestData.Entity, requestData.XPubs)
+	sigHash, err := oracle.VerifyXPub(ctx, dbConn, v.BlockHandler, &requestData.Entity,
+		requestData.XPubs)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify xpub"))
 	}
 
-	sig, err := v.Key.Sign(sigHash[:])
+	sig, err := v.Key.Sign(sigHash.Hash[:])
 	if err != nil {
 		return translate(errors.Wrap(err, "sign"))
 	}
@@ -125,14 +125,14 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 		Approved     bool              `json:"approved"`
 		Description  string            `json:"description"`
 		SigAlgorithm uint32            `json:"algorithm"`
-		Sig          bitcoin.Signature `json:"signature"`
+		Signature    bitcoin.Signature `json:"signature"`
 		BlockHeight  uint32            `json:"block_height"`
 	}{
-		Approved:     approved,
-		Description:  description,
+		Approved:     sigHash.Approved,
+		Description:  sigHash.Description,
 		SigAlgorithm: 1,
-		Sig:          sig,
-		BlockHeight:  height,
+		Signature:    sig,
+		BlockHeight:  sigHash.BlockHeight,
 	}
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)
@@ -168,17 +168,17 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
 
-	expiration := uint64(time.Now().Add(time.Duration(v.IdentityExpirationDurationSeconds) * time.Second).UnixNano())
+	expiration := uint64(time.Now().Add(time.Duration(v.IdentityExpirationDurationSeconds) *
+		time.Second).UnixNano())
 
 	// Verify that the public key is associated with the entity.
-	sigHash, height, approved, description, err := oracle.CreateAdminCertificate(ctx, dbConn,
-		v.Config.IsTest, v.BlockHandler, requestData.XPubs, requestData.Index, requestData.Issuer,
-		requestData.Contract, expiration)
+	sigHash, err := oracle.CreateAdminCertificate(ctx, dbConn, v.Config.IsTest, v.BlockHandler,
+		requestData.XPubs, requestData.Index, requestData.Issuer, requestData.Contract, expiration)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify admin"))
 	}
 
-	sig, err := v.Key.Sign(sigHash[:])
+	sig, err := v.Key.Sign(sigHash.Hash[:])
 	if err != nil {
 		return translate(errors.Wrap(err, "sign"))
 	}
@@ -190,11 +190,10 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 		BlockHeight uint32            `json:"block_height"`
 		Expiration  uint64            `json:"expiration"`
 	}{
-		Approved:    approved,
-		Description: description,
+		Approved:    sigHash.Approved,
+		Description: sigHash.Description,
 		Signature:   sig,
-		BlockHeight: height,
-		Expiration:  expiration,
+		BlockHeight: sigHash.BlockHeight,
 	}
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)
