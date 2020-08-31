@@ -1,5 +1,5 @@
 # Build Container
-FROM golang:1.14-alpine3.11 AS build-env
+FROM golang:1.15-alpine3.12 AS build-env
 RUN apk update && \
     apk add ca-certificates && \
     apk add linux-headers && \
@@ -7,6 +7,7 @@ RUN apk update && \
     apk add libc-dev && \
     apk add --no-cache --upgrade git make ca-certificates && \
     apk add --no-cache python3 && \
+    apk add --no-cache py3-pip && \
     pip3 install --upgrade pip && \
     pip3 install boto3 && \
     rm -rf /var/cache/apk/*
@@ -33,10 +34,11 @@ RUN make dist
 
 
 # Final Container 
-FROM alpine:3.11 AS oracled-env
+FROM alpine:3.12 AS oracled-env
 RUN apk update && \
     apk add ca-certificates && \
     apk add --no-cache python3 && \
+    apk add --no-cache py3-pip && \
     pip3 install --upgrade pip && \
     pip3 install boto3 && \
     rm -rf /var/cache/apk/*
@@ -48,4 +50,4 @@ COPY --from=build-env /go/src/github.com/tokenized/identity-oracle/dist/identity
 
 ENTRYPOINT source /srv/clients/conf/env.sh -e=$BUILD_ENV && "/srv/clients/bin/identityoracled"
 
-# docker build -t identityoracled:latest --build-arg GITHUB_USER=<xyz>
+# docker build -t identityoracled:latest --build-arg GITHUB_USER=yxz
