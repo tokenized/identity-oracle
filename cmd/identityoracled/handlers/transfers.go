@@ -17,11 +17,11 @@ import (
 
 // Transfer provides support for transferring bitcoin and tokens.
 type Transfers struct {
-	Config                    *web.Config
-	MasterDB                  *db.DB
-	Key                       bitcoin.Key
-	BlockHandler              *oracle.BlockHandler
-	ExpirationDurationSeconds int
+	Config                            *web.Config
+	MasterDB                          *db.DB
+	Key                               bitcoin.Key
+	BlockHandler                      *oracle.BlockHandler
+	TransferExpirationDurationSeconds int
 
 	Approver oracle.ApproverInterface
 }
@@ -42,6 +42,13 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	for _, xpub := range requestData.XPubs {
+		if xpub.IsPrivate() {
+			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			return nil
+		}
 	}
 
 	dbConn := t.MasterDB.Copy()
@@ -67,12 +74,13 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		}
 	}
 
-	expiration := uint64(time.Now().Add(time.Duration(t.ExpirationDurationSeconds) * time.Second).UnixNano())
+	expiration := uint64(time.Now().Add(time.Duration(t.TransferExpirationDurationSeconds) *
+		time.Second).UnixNano())
 
 	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
-	sigHash, height, hash, err := oracle.CreateReceiveSignature(ctx, dbConn,
-		t.BlockHandler, requestData.Contract, requestData.AssetID, requestData.XPubs,
-		requestData.Index, expiration, approved)
+	sigHash, height, hash, err := oracle.CreateReceiveSignature(ctx, dbConn, t.BlockHandler,
+		requestData.Contract, requestData.AssetID, requestData.XPubs, requestData.Index, expiration,
+		approved)
 	if err != nil {
 		return translate(errors.Wrap(err, "approve transfer"))
 	}

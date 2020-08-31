@@ -17,10 +17,11 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/logger"
+	"github.com/tokenized/pkg/rpcnode"
 	"github.com/tokenized/pkg/spynode"
 	"github.com/tokenized/pkg/spynode/handlers/data"
 	"github.com/tokenized/pkg/storage"
-	"github.com/tokenized/pkg/wire"
+	"github.com/tokenized/smart-contract/pkg/contracts"
 )
 
 func Run(approver oracle.ApproverInterface) {
@@ -115,7 +116,22 @@ func Run(approver oracle.ApproverInterface) {
 	}
 
 	spyNode := spynode.NewNode(spyConfig, spyStorage)
-	spyNode.AddTxFilter(&TxFilter{})
+
+	// -------------------------------------------------------------------------
+	// RPC Node
+
+	rpcConfig := &rpcnode.Config{
+		Host:       cfg.RpcNode.Host,
+		Username:   cfg.RpcNode.Username,
+		Password:   cfg.RpcNode.Password,
+		MaxRetries: cfg.RpcNode.MaxRetries,
+		RetryDelay: cfg.RpcNode.RetryDelay,
+	}
+
+	rpc, err := rpcnode.NewNode(rpcConfig)
+	if err != nil {
+		panic(err)
+	}
 
 	// ---------------------------------------------------------------------------------------------
 	// Start Database / Storage
@@ -137,14 +153,6 @@ func Run(approver oracle.ApproverInterface) {
 	}
 	defer masterDB.Close()
 
-	blockHandler := &oracle.BlockHandler{Log: log}
-	if err := blockHandler.Load(ctx, masterDB); err != nil {
-		log.Fatalf("main : Load blocks : %v", err)
-	}
-	defer blockHandler.Save(ctx, masterDB)
-
-	spyNode.RegisterListener(blockHandler)
-
 	// ---------------------------------------------------------------------------------------------
 	// Web Config
 
@@ -155,12 +163,34 @@ func Run(approver oracle.ApproverInterface) {
 	}
 
 	// ---------------------------------------------------------------------------------------------
+	// Block Handler
+
+	blockHandler := &oracle.BlockHandler{Log: log}
+	if err := blockHandler.Load(ctx, masterDB); err != nil {
+		log.Fatalf("main : Load blocks : %v", err)
+	}
+	defer blockHandler.Save(ctx, masterDB)
+
+	spyNode.RegisterListener(blockHandler)
+
+	// ---------------------------------------------------------------------------------------------
+	// Contract Handler
+
+	contractsManager := oracle.NewContractsManager(masterDB.GetStorage(), webConfig.IsTest)
+
+	contractsHandler := contracts.NewContractsHandler(rpc, webConfig.Net, webConfig.IsTest,
+		contractsManager)
+
+	spyNode.RegisterListener(contractsHandler)
+
+	// ---------------------------------------------------------------------------------------------
 	// Start API Service
 
 	ra := bitcoin.NewRawAddressFromAddress(contractAddress)
 
 	webHandler := handlers.API(log, webConfig, masterDB, key, ra, blockHandler,
-		cfg.Oracle.ExpirationDurationSeconds, approver)
+		cfg.Oracle.TransferExpirationDurationSeconds, cfg.Oracle.IdentityExpirationDurationSeconds,
+		approver)
 
 	api := http.Server{
 		Addr:           cfg.Web.APIHost,
@@ -250,10 +280,4 @@ func Run(approver oracle.ApproverInterface) {
 			}
 		}
 	}
-}
-
-type TxFilter struct{}
-
-func (filter *TxFilter) IsRelevant(ctx context.Context, tx *wire.MsgTx) bool {
-	return false // We only care about block hashes
 }

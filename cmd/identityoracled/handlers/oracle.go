@@ -56,8 +56,8 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 	defer span.End()
 
 	var requestData struct {
-		Entity    actions.EntityField `json:"entity" validate:"required"`     // hex protobuf
-		PublicKey bitcoin.PublicKey   `json:"public_key" validate:"required"` // hex compressed
+		Entity    actions.EntityField `json:"entity" validate:"required"`
+		PublicKey bitcoin.PublicKey   `json:"public_key" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
@@ -74,7 +74,8 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 	defer dbConn.Close()
 
 	if o.Approver != nil {
-		if status, err := o.Approver.ApproveRegistration(ctx, requestData.Entity, requestData.PublicKey); err != nil {
+		if status, err := o.Approver.ApproveRegistration(ctx, requestData.Entity,
+			requestData.PublicKey); err != nil {
 			web.RespondError(ctx, log, w, err, status)
 			return nil
 		}
@@ -114,13 +115,20 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 
 	var requestData struct {
 		UserID          uuid.UUID            `json:"user_id" validate:"required"`
-		XPubs           bitcoin.ExtendedKeys `json:"xpubs" validate:"required"` // hex
+		XPubs           bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
 		RequiredSigners int                  `json:"required_signers" validate:"required"`
-		Signature       bitcoin.Signature    `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
+		Signature       bitcoin.Signature    `json:"signature" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	for _, xpub := range requestData.XPubs {
+		if xpub.IsPrivate() {
+			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			return nil
+		}
 	}
 
 	dbConn := o.MasterDB.Copy()
@@ -178,11 +186,18 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 	defer span.End()
 
 	var requestData struct {
-		XPubs bitcoin.ExtendedKeys `json:"xpubs" validate:"required"` // hex
+		XPubs bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	for _, xpub := range requestData.XPubs {
+		if xpub.IsPrivate() {
+			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			return nil
+		}
 	}
 
 	dbConn := o.MasterDB.Copy()

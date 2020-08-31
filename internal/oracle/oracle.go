@@ -61,7 +61,7 @@ func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, blockHandler *Bl
 	}
 
 	sigHash, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, assetCode.Bytes(),
-		receiveAddress, &blockHash, expiration, approveValue)
+		receiveAddress, blockHash, expiration, approveValue)
 	if err != nil {
 		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate signature")
 	}

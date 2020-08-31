@@ -51,7 +51,7 @@ func CreateXPub(ctx context.Context, dbConn *db.DB, xpub *XPub) error {
 	return nil
 }
 
-func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (XPub, error) {
+func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpubs bitcoin.ExtendedKeys) (XPub, error) {
 	sql := `SELECT ` + XPubColumns + `
 		FROM
 			xpubs xp
@@ -59,14 +59,16 @@ func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKe
 			xp.xpub = ?`
 
 	result := XPub{}
-	err := dbConn.Get(ctx, &result, sql, xpub)
+	err := dbConn.Get(ctx, &result, sql, xpubs)
 	if err == db.ErrNotFound {
 		err = ErrXPubNotFound
 	}
 	return result, err
 }
 
-func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (uuid.UUID, error) {
+func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB,
+	xpubs bitcoin.ExtendedKeys) (uuid.UUID, error) {
+
 	sql := `SELECT user_id
 		FROM
 			xpubs
@@ -74,7 +76,7 @@ func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.Extended
 			xpubs.xpub = ?`
 
 	var result uuid.UUID
-	err := dbConn.Get(ctx, &result, sql, xpub)
+	err := dbConn.Get(ctx, &result, sql, xpubs)
 	if err == db.ErrNotFound {
 		err = ErrXPubNotFound
 	}

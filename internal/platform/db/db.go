@@ -162,6 +162,11 @@ func (db *DB) SetStorage(storage storage.Storage) {
 	db.storage = storage
 }
 
+// GetStorage returns the storage value.
+func (db *DB) GetStorage() storage.Storage {
+	return db.storage
+}
+
 // -------------------------------------------------------------------------
 // Database
 

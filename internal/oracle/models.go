@@ -25,3 +25,12 @@ type XPub struct {
 	RequiredSigners int                  `json:"required_signers" db:"required_signers"`
 	DateCreated     time.Time            `db:"date_created" json:"date_created"`
 }
+
+// SignatureHash is a simple struct for wrapping the common values returned from a function that
+// calculates a signature hash.
+type SignatureHash struct {
+	Hash        []byte
+	BlockHeight uint32
+	Approved    bool
+	Description string
+}
