@@ -5,6 +5,7 @@ import (
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/logger"
 	"github.com/tokenized/specification/dist/golang/actions"
 	"github.com/tokenized/specification/dist/golang/protocol"
 
@@ -110,7 +111,7 @@ func VerifyXPub(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
 //   uint32 - block height of block hash included in signature hash
 //   bitcoin.Hash32 - block hash included in signature hash
 //   bool - true if approved
-func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, isTest bool,
+func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, net bitcoin.Network, isTest bool,
 	blockHandler *BlockHandler, xpubs bitcoin.ExtendedKeys, index uint32,
 	issuer actions.EntityField, entityContract bitcoin.RawAddress,
 	expiration uint64) (*SignatureHash, error) {
@@ -152,10 +153,13 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, isTest bool,
 	var entity interface{}
 	var checkEntity *actions.EntityField
 	if entityContract.IsEmpty() {
-		entity = issuer
+		entity = &issuer // Must be a pointer
 		checkEntity = &issuer
+		logger.Info(ctx, "Issuer : %+v", issuer)
 	} else {
 		entity = entityContract
+		logger.Info(ctx, "Entity Contract : %s",
+			bitcoin.NewAddressFromRawAddress(entityContract, net).String())
 
 		// Verify the contract belongs to the user.
 		cf, err := GetContractFormation(ctx, dbConn, entityContract, isTest)
@@ -172,6 +176,11 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, isTest bool,
 		approved = false
 		approve = 0
 	}
+
+	logger.Info(ctx, "Address : %s", bitcoin.NewAddressFromRawAddress(adminAddress, net).String())
+	logger.Info(ctx, "Block Hash : %s", blockHash.String())
+	logger.Info(ctx, "Expiration : %d", expiration)
+	logger.Info(ctx, "Approved : %d", approve)
 
 	hash, err := protocol.ContractAdminIdentityOracleSigHash(ctx, adminAddress, entity, blockHash,
 		expiration, approve)

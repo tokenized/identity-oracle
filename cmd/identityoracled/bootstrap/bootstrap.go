@@ -52,6 +52,7 @@ func Run(approver oracle.ApproverInterface) {
 		}
 	}
 
+	logConfig.EnableSubSystem(rpcnode.SubSystem)
 	logConfig.EnableSubSystem(spynode.SubSystem)
 
 	ctx := logger.ContextWithLogConfig(context.Background(), logConfig)
