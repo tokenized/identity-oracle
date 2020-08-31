@@ -195,6 +195,7 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 		Description: sigHash.Description,
 		Signature:   sig,
 		BlockHeight: sigHash.BlockHeight,
+		Expiration:  expiration,
 	}
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)
