@@ -7,6 +7,7 @@ import (
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/logger"
 	"github.com/tokenized/pkg/storage"
 	"github.com/tokenized/specification/dist/golang/actions"
 	"github.com/tokenized/specification/dist/golang/protocol"
@@ -23,12 +24,13 @@ const (
 // contract formation actions to storage.
 type ContractsManager struct {
 	st     storage.Storage
+	net    bitcoin.Network
 	isTest bool
 }
 
 // NewContractsManager creates a ContractsManager.
-func NewContractsManager(st storage.Storage, isTest bool) *ContractsManager {
-	return &ContractsManager{st, isTest}
+func NewContractsManager(st storage.Storage, net bitcoin.Network, isTest bool) *ContractsManager {
+	return &ContractsManager{st, net, isTest}
 }
 
 // SaveContractFormation saves a contract formation to storage.
@@ -45,6 +47,8 @@ func (cm *ContractsManager) SaveContractFormation(ctx context.Context, ra bitcoi
 		}
 
 		// ErrNotFound, First version of this contract formation
+		logger.Info(ctx, "Saving contract formation : %s : %x",
+			bitcoin.NewAddressFromRawAddress(ra, cm.net).String(), script)
 		if err := cm.st.Write(ctx, key, script, nil); err != nil {
 			return errors.Wrap(err, "write contract formation")
 		}
@@ -54,6 +58,8 @@ func (cm *ContractsManager) SaveContractFormation(ctx context.Context, ra bitcoi
 	action, err := protocol.Deserialize(b, cm.isTest)
 	if err != nil {
 		// Overwrite invalid contract formation
+		logger.Warn(ctx, "Overwrite invalid contract formation : %s : %x",
+			bitcoin.NewAddressFromRawAddress(ra, cm.net).String(), script)
 		if err := cm.st.Write(ctx, key, script, nil); err != nil {
 			return errors.Wrap(err, "write contract formation")
 		}
@@ -64,6 +70,8 @@ func (cm *ContractsManager) SaveContractFormation(ctx context.Context, ra bitcoi
 	current, ok := action.(*actions.ContractFormation)
 	if !ok {
 		// Overwrite invalid contract formation
+		logger.Warn(ctx, "Overwrite non contract formation : %s : %x",
+			bitcoin.NewAddressFromRawAddress(ra, cm.net).String(), script)
 		if err := cm.st.Write(ctx, key, script, nil); err != nil {
 			return errors.Wrap(err, "write contract formation")
 		}
@@ -83,6 +91,12 @@ func (cm *ContractsManager) SaveContractFormation(ctx context.Context, ra bitcoi
 
 	if current.Timestamp > new.Timestamp {
 		return nil // already have a later version
+	}
+
+	logger.Info(ctx, "Updating contract formation : %s : %x",
+		bitcoin.NewAddressFromRawAddress(ra, cm.net).String(), script)
+	if err := cm.st.Write(ctx, key, script, nil); err != nil {
+		return errors.Wrap(err, "write contract formation")
 	}
 
 	return nil

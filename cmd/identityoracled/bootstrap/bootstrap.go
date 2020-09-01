@@ -177,7 +177,8 @@ func Run(approver oracle.ApproverInterface) {
 	// ---------------------------------------------------------------------------------------------
 	// Contract Handler
 
-	contractsManager := oracle.NewContractsManager(masterDB.GetStorage(), webConfig.IsTest)
+	contractsManager := oracle.NewContractsManager(masterDB.GetStorage(), webConfig.Net,
+		webConfig.IsTest)
 
 	contractsHandler := contracts.NewContractsHandler(rpc, webConfig.Net, webConfig.IsTest,
 		contractsManager)
