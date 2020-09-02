@@ -147,6 +147,9 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, net bitcoin.Netw
 		return nil, errors.Wrap(err, "get sig block hash")
 	}
 
+	logger.Info(ctx, "Admin Address : %s",
+		bitcoin.NewAddressFromRawAddress(adminAddress, net).String())
+
 	approved := true
 	approve := uint8(1)
 	var description string
@@ -177,7 +180,6 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, net bitcoin.Netw
 		approve = 0
 	}
 
-	logger.Info(ctx, "Address : %s", bitcoin.NewAddressFromRawAddress(adminAddress, net).String())
 	logger.Info(ctx, "Block Hash : %s", blockHash.String())
 	logger.Info(ctx, "Expiration : %d", expiration)
 	logger.Info(ctx, "Approved : %d", approve)
@@ -187,6 +189,8 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, net bitcoin.Netw
 	if err != nil {
 		return nil, errors.Wrap(err, "generate sig hash")
 	}
+
+	logger.Info(ctx, "Sig Hash : %x", hash)
 
 	return &SignatureHash{
 		Hash:        hash,
