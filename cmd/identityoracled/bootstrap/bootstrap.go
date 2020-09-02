@@ -166,7 +166,7 @@ func Run(approver oracle.ApproverInterface) {
 	// ---------------------------------------------------------------------------------------------
 	// Block Handler
 
-	blockHandler := &oracle.BlockHandler{Log: log}
+	blockHandler := &oracle.BlockHandler{}
 	if err := blockHandler.Load(ctx, masterDB); err != nil {
 		log.Fatalf("main : Load blocks : %v", err)
 	}

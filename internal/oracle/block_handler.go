@@ -16,7 +16,6 @@ import (
 )
 
 type BlockHandler struct {
-	Log          logger.Logger
 	InSync       bool
 	LatestHeight uint32
 	LatestBlocks []bitcoin.Hash32
@@ -92,22 +91,25 @@ func (bh *BlockHandler) Load(ctx context.Context, dbConn *db.DB) error {
 	return nil
 }
 
-/************************ Implement the SpyNode Listener interface. *******************************/
+// HandleBlock handles a block message from spynode.
+// Implements the spynode Listener interface.
+func (bh *BlockHandler) HandleBlock(ctx context.Context, msgType int,
+	block *handlers.BlockMessage) error {
+	ctx = logger.ContextWithOutLogSubSystem(ctx)
 
-func (bh *BlockHandler) HandleBlock(ctx context.Context, msgType int, block *handlers.BlockMessage) error {
 	bh.Lock.Lock()
 	defer bh.Lock.Unlock()
 
 	switch msgType {
 	case handlers.ListenerMsgBlock:
-		bh.Log.Printf("New Block (%d) : %s\n", block.Height, block.Hash.String())
+		logger.Info(ctx, "New Block (%d) : %s\n", block.Height, block.Hash)
 		bh.LatestHeight = uint32(block.Height)
 		bh.LatestBlocks = append(bh.LatestBlocks, block.Hash)
 		if len(bh.LatestBlocks) > 10 {
 			bh.LatestBlocks = bh.LatestBlocks[len(bh.LatestBlocks)-10:]
 		}
 	case handlers.ListenerMsgBlockRevert:
-		bh.Log.Printf("Reverted Block (%d) : %s\n", block.Height, block.Hash.String())
+		logger.Info(ctx, "Reverted Block (%d) : %s\n", block.Height, block.Hash)
 		bh.LatestHeight = uint32(block.Height)
 		if len(bh.LatestBlocks) > 0 {
 			if bh.LatestBlocks[len(bh.LatestBlocks)-1].Equal(&block.Hash) {
@@ -118,25 +120,34 @@ func (bh *BlockHandler) HandleBlock(ctx context.Context, msgType int, block *han
 	return nil
 }
 
+// HandleTx handles a new tx message from spynode.
+// Implements the spynode Listener interface.
 func (bh *BlockHandler) HandleTx(ctx context.Context, tx *wire.MsgTx) (bool, error) {
 	return false, nil
 }
 
+// HandleTxState handles messages from spynode relating to changes in tx state. Tx confirm, cancel,
+// unsafe, and revert messages.
+// Implements the spynode Listener interface.
 func (bh *BlockHandler) HandleTxState(ctx context.Context, msgType int, txid bitcoin.Hash32) error {
 	return nil
 }
 
+// HandleInSync handles the in sync message from spynode, sent when in sync with network.
+// Implements the spynode Listener interface.
 func (bh *BlockHandler) HandleInSync(ctx context.Context) error {
+	ctx = logger.ContextWithOutLogSubSystem(ctx)
+
 	bh.Lock.Lock()
 	defer bh.Lock.Unlock()
 
-	bh.Log.Printf("Node is in sync\n")
+	logger.Info(ctx, "Node is in sync")
 	bh.InSync = true
 
-	bh.Log.Printf("Latest blocks :\n")
+	logger.Info(ctx, "Latest blocks :")
 	height := bh.LatestHeight
 	for i := len(bh.LatestBlocks) - 1; i >= 0; i-- {
-		bh.Log.Printf("  %d %s\n", height, bh.LatestBlocks[i].String())
+		logger.Info(ctx, "  %d %s\n", height, bh.LatestBlocks[i])
 		height--
 	}
 
