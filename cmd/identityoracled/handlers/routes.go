@@ -22,7 +22,9 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 	// Register OPTIONS fallback handler for preflight requests.
 	app.HandleOptions(mid.CORSHandler)
 
-	hh := Health{}
+	hh := Health{
+		MasterDB: masterDB,
+	}
 	app.Handle("GET", "/health", hh.Health)
 
 	oh := Oracle{
