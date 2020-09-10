@@ -9,6 +9,7 @@ import (
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/uuid"
 )
 
 func TestUsers(t *testing.T) {
@@ -31,6 +32,7 @@ func TestUsers(t *testing.T) {
 	}
 
 	user := &User{
+		ID:           uuid.New().String(),
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),
 		DateCreated:  time.Now(),
@@ -72,6 +74,7 @@ func TestXPub(t *testing.T) {
 	}
 
 	user := &User{
+		ID:           uuid.New().String(),
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),
 		DateCreated:  time.Now(),
@@ -115,7 +118,7 @@ func TestXPub(t *testing.T) {
 		t.Fatalf("Failed to fetch xpub user id : %s", err)
 	}
 
-	if userid != user.ID {
+	if *userid != user.ID {
 		t.Fatalf("Invalid xpub user id")
 	}
 

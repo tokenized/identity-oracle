@@ -45,9 +45,22 @@ func TestRegister(t *testing.T) {
 	requestData := struct {
 		Entity    actions.EntityField `json:"entity" validate:"required"`     // hex protobuf
 		PublicKey bitcoin.PublicKey   `json:"public_key" validate:"required"` // hex compressed
+		Signature bitcoin.Signature   `json:"signature" validate:"required"`
 	}{
 		Entity:    entity,
 		PublicKey: key.PublicKey(),
+	}
+
+	// Sign the entity
+	s := sha256.New()
+	if err := requestData.Entity.WriteDeterministic(s); err != nil {
+		t.Fatalf("Failed to write entity : %s", err)
+	}
+	hash := sha256.Sum256(s.Sum(nil))
+
+	requestData.Signature, err = key.Sign(hash[:])
+	if err != nil {
+		t.Fatalf("Failed to sign entity : %s", err)
 	}
 
 	b, err := json.Marshal(&requestData)
@@ -119,7 +132,10 @@ func TestAddXPub(t *testing.T) {
 		t.Fatalf("Failed to serialize user entity : %s", err)
 	}
 
+	userID := uuid.New()
+
 	user := &oracle.User{
+		ID:           userID.String(),
 		Entity:       entityBytes,
 		PublicKey:    key.PublicKey(),
 		DateCreated:  time.Now(),
@@ -139,7 +155,7 @@ func TestAddXPub(t *testing.T) {
 	xkeys := bitcoin.ExtendedKeys{xkey}
 
 	requestData := struct {
-		UserID          uuid.UUID            `json:"user_id" validate:"required"`
+		UserID          string               `json:"user_id" validate:"required"`
 		XPubs           bitcoin.ExtendedKeys `json:"xpubs" validate:"required"` // hex
 		RequiredSigners int                  `json:"required_signers" validate:"required"`
 		Signature       bitcoin.Signature    `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
@@ -150,7 +166,7 @@ func TestAddXPub(t *testing.T) {
 	}
 
 	s := sha256.New()
-	s.Write(requestData.UserID[:])
+	s.Write(userID[:])
 	s.Write(requestData.XPubs.Bytes())
 	if err := binary.Write(s, binary.LittleEndian, uint32(requestData.RequiredSigners)); err != nil {
 		t.Fatalf("Failed to hash required signers : %s", err)

@@ -13,13 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func VerifyPubKey(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
+func VerifyPubKey(ctx context.Context, user *User, blockHandler *BlockHandler,
 	entity *actions.EntityField, xpub bitcoin.ExtendedKey, index uint32) (*SignatureHash, error) {
-
-	user, err := FetchUserByXPub(ctx, dbConn, bitcoin.ExtendedKeys{xpub})
-	if err != nil {
-		return nil, errors.Wrap(err, "fetch user")
-	}
 
 	userEntity := &actions.EntityField{}
 	if err := proto.Unmarshal(user.Entity, userEntity); err != nil {
@@ -63,13 +58,8 @@ func VerifyPubKey(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler
 	}, nil
 }
 
-func VerifyXPub(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
+func VerifyXPub(ctx context.Context, user *User, blockHandler *BlockHandler,
 	entity *actions.EntityField, xpub bitcoin.ExtendedKeys) (*SignatureHash, error) {
-
-	user, err := FetchUserByXPub(ctx, dbConn, xpub)
-	if err != nil {
-		return nil, errors.Wrap(err, "fetch user")
-	}
 
 	userEntity := &actions.EntityField{}
 	if err := proto.Unmarshal(user.Entity, userEntity); err != nil {
@@ -111,15 +101,10 @@ func VerifyXPub(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
 //   uint32 - block height of block hash included in signature hash
 //   bitcoin.Hash32 - block hash included in signature hash
 //   bool - true if approved
-func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, net bitcoin.Network, isTest bool,
-	blockHandler *BlockHandler, xpubs bitcoin.ExtendedKeys, index uint32,
+func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net bitcoin.Network,
+	isTest bool, blockHandler *BlockHandler, xpubs bitcoin.ExtendedKeys, index uint32,
 	issuer actions.EntityField, entityContract bitcoin.RawAddress,
 	expiration uint64) (*SignatureHash, error) {
-
-	user, err := FetchUserByXPub(ctx, dbConn, xpubs)
-	if err != nil {
-		return nil, errors.Wrap(err, "fetch user")
-	}
 
 	userEntity := &actions.EntityField{}
 	if err := proto.Unmarshal(user.Entity, userEntity); err != nil {

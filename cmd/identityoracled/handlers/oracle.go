@@ -58,10 +58,23 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 	var requestData struct {
 		Entity    actions.EntityField `json:"entity" validate:"required"`
 		PublicKey bitcoin.PublicKey   `json:"public_key" validate:"required"`
+		Signature bitcoin.Signature   `json:"signature" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	// Verify signature is valid for user's public key
+	s := sha256.New()
+	if err := requestData.Entity.WriteDeterministic(s); err != nil {
+		return translate(errors.Wrap(err, "write entity"))
+	}
+	hash := sha256.Sum256(s.Sum(nil))
+
+	if !requestData.Signature.Verify(hash[:], requestData.PublicKey) {
+		web.Respond(ctx, log, w, nil, http.StatusUnauthorized)
+		return nil
 	}
 
 	entityBytes, err := proto.Marshal(&requestData.Entity)
@@ -69,24 +82,34 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 		return translate(errors.Wrap(err, "protobuf marshal entity"))
 	}
 
-	// Insert user
-	dbConn := o.MasterDB.Copy()
-	defer dbConn.Close()
+	userID := uuid.New().String()
 
 	if o.Approver != nil {
-		if status, err := o.Approver.ApproveRegistration(ctx, requestData.Entity,
-			requestData.PublicKey); err != nil {
+		if status, description, err := o.Approver.ApproveRegistration(ctx, userID,
+			requestData.Entity, requestData.PublicKey); err != nil {
 			web.RespondError(ctx, log, w, err, status)
+			return nil
+		} else if status != 0 {
+			response := struct {
+				Status string `json:"status"`
+			}{
+				Status: description,
+			}
+			web.Respond(ctx, log, w, response, http.StatusForbidden)
 			return nil
 		}
 	}
 
+	// Insert user
+	dbConn := o.MasterDB.Copy()
+	defer dbConn.Close()
+
 	user := &oracle.User{
+		ID:           userID,
 		Entity:       entityBytes,
 		PublicKey:    requestData.PublicKey,
 		DateCreated:  time.Now(),
 		DateModified: time.Now(),
-		Approved:     true, // TODO Add approval step
 		IsDeleted:    false,
 	}
 
@@ -95,8 +118,8 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 	}
 
 	response := struct {
-		Status string    `json:"status"`
-		UserID uuid.UUID `json:"user_id"`
+		Status string `json:"status"`
+		UserID string `json:"user_id"`
 	}{
 		Status: "User Created",
 		UserID: user.ID,
@@ -114,7 +137,7 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 	defer span.End()
 
 	var requestData struct {
-		UserID          uuid.UUID            `json:"user_id" validate:"required"`
+		UserID          string               `json:"user_id" validate:"required"`
 		XPubs           bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
 		RequiredSigners int                  `json:"required_signers" validate:"required"`
 		Signature       bitcoin.Signature    `json:"signature" validate:"required"`
@@ -134,8 +157,8 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
 
-	// Check user ID
-	_, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
+	// Fetch User
+	user, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
 	if err != nil {
 		if err == db.ErrNotFound {
 			return web.ErrNotFound // User doesn't exist
@@ -143,22 +166,14 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 		return translate(errors.Wrap(err, "fetch user"))
 	}
 
-	xpub := &oracle.XPub{
-		UserID:          requestData.UserID,
-		XPub:            requestData.XPubs,
-		RequiredSigners: requestData.RequiredSigners,
-		DateCreated:     time.Now(),
-	}
-
-	// Fetch User
-	user, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
+	userid, err := uuid.Parse(requestData.UserID)
 	if err != nil {
-		return translate(errors.Wrap(err, "fetch user"))
+		return translate(errors.Wrap(err, "parse user id"))
 	}
 
 	// Verify signature is valid for user's public key
 	s := sha256.New()
-	s.Write(requestData.UserID[:])
+	s.Write(userid[:])
 	s.Write(requestData.XPubs.Bytes())
 	if err := binary.Write(s, binary.LittleEndian, uint32(requestData.RequiredSigners)); err != nil {
 		return translate(errors.Wrap(err, "hash signers"))
@@ -167,6 +182,13 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 
 	if !requestData.Signature.Verify(hash[:], user.PublicKey) {
 		return translate(errors.Wrap(err, "validate sig"))
+	}
+
+	xpub := &oracle.XPub{
+		UserID:          requestData.UserID,
+		XPub:            requestData.XPubs,
+		RequiredSigners: requestData.RequiredSigners,
+		DateCreated:     time.Now(),
 	}
 
 	// Insert xpub
@@ -213,9 +235,9 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 	}
 
 	response := struct {
-		UserID uuid.UUID `json:"user_id"`
+		UserID string `json:"user_id"`
 	}{
-		UserID: userID,
+		UserID: *userID,
 	}
 
 	web.RespondData(ctx, log, w, response, http.StatusOK)

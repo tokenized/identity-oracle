@@ -12,7 +12,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/tokenized/pkg v0.0.0-20200904024208-51f4646cbc01
 	github.com/tokenized/smart-contract v0.2.3-0.20200906194421-36f316d836dd
-	github.com/tokenized/specification v0.2.3-0.20200906195620-ab15f309665f
+	github.com/tokenized/specification v0.2.3-0.20200910014813-505fd0bafcdf
 	go.opencensus.io v0.22.2
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2

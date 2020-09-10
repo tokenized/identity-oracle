@@ -23,6 +23,9 @@ run:
 migrate:
 	@$(GOOSE) up
 
+migrate-down:
+	@$(GOOSE) down
+
 migrate-rebuild:
 	@$(GOOSE) down-to 0 && $(GOOSE) up
 
