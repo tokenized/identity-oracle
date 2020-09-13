@@ -11,7 +11,7 @@ post:
             user_id:
               type: string
               example: "9706702a-ee87-4b14-ac29-7cc56abfe5db"
-            xpub:
+            xpubs:
               type: string
             required_signers:
               type: string

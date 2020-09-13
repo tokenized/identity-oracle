@@ -8,7 +8,7 @@ post:
         schema:
           type: object
           properties:
-            xpub:
+            xpubs:
               type: string
             entity:
               $ref: "#/components/schemas/Entity"
@@ -23,9 +23,14 @@ post:
             properties:
               approved:
                 type: boolean
+              description:
+                type: string
               algorithm:
                 type: number
               signature:
                 type: string
               block_height:
                 type: number
+
+    404:
+      description: Xpub not found

@@ -1,22 +1,85 @@
-# Tokenized specification Entity 
-# defined at https://github.com/tokenized/specification/blob/master/dist/golang/actions/actions.pb.go type EntityField
+
+description:  >
+  Entity represents the details of a legal Entity, such as a public or private company, government
+  agency, or and individual.
 type: object
 properties:
-  data:
-    type: object
-    properties:
-      Name:
-        type: string
-        example: "John Bitcoin"
-      Type:
-        type: string
-        example: "I"
-      LEI:
-        type: string
-        example: "54930084UKLVMY22DS16"
-      EmailAddress:
-        type: string
-        example: "john@tokenized.com"
-      DomainName:
-        type: string
-        example: "tokenized.com"
+  Name:
+    description:  >
+      Length 1-255 bytes (0 is not valid). Issuing entity (company, organization, individual).  Can
+      be any unique identifying string, including human readable names for branding/vanity purposes.
+    type: string
+    example: "Tesla Inc."
+  Type:
+    description: The type of entity. (i.e Public Company, Individual) (Specification/Resources).
+    type: string
+    example: "I"
+  LEI:
+    description:  >
+      Null is valid. A Legal Entity Identifier (or LEI) is an international identifier made up of a
+      20-character identifier that identifies distinct legal entities that engage in financial
+      transactions. It is defined by ISO 17442.[1] Natural persons are not required to have an LEI;
+      they’re eligible to have one issued, however, but only if they act in an independent business
+      capacity.[2] The LEI is a global standard, designed to be non-proprietary data that is freely
+      accessible to all.[3] As of December 2018, over 1,300,000 legal entities from more than 200
+      countries have now been issued with LEIs.
+    type: string
+    example: "54930084UKLVMY22DS16"
+  UnitNumber:
+    description: Issuer/Entity/Contracting Party X Address Details (eg. HQ)
+    type: string
+    example: "2"
+  BuildingNumber:
+    type: string
+    example: "13577"
+  Street:
+    type: string
+    example: "Fairmont Ave"
+  SuburbCity:
+    type: string
+    example: "Robinoh"
+  TerritoryStateProvinceCode:
+    type: string
+    example: "BC"
+  CountryCode:
+    type: string
+    example: "USA"
+  PostalZIPCode:
+    type: string
+    example: "50210"
+  EmailAddress:
+    description:  >
+      Length 0-255 bytes. Address for text-based communication: eg. email address, Bitcoin address
+    type: string
+    example: "satoshi@tokenized.com"
+  PhoneNumber:
+    description: Length 0-255 bytes. 0 is valid. Phone Number for Entity.
+    type: string
+    example: "0448484848"
+  Administration:
+    description:  >
+      A list of people that are in Administrative Roles for the Entity.  eg. Chair, Director,
+      Managing Partner, etc.
+    type: array
+    items:
+      type: object
+      $ref: "#/components/schemas/AdministratorField"
+  Management:
+    description:  >
+      A list of people in Management Roles for the Entity. e.g CEO, COO, CTO, CFO, Secretary,
+      Executive, etc.
+    type: array
+    items:
+      type: object
+      $ref: "#/components/schemas/ManagerField"
+  DomainName:
+    description: Domain name owned by this entity. Length 0-255 bytes. 0 is valid.
+    type: string
+    example: "tokenized.com"
+  PaymailHandle:
+    description:  >
+      Length 0-255 bytes. Handle containing an alias and domain name performing queries defined in
+      the Paymail protocol.
+    type: string
+    example: "satoshi@tokenized.id"
+

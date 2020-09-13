@@ -20,6 +20,9 @@ dist:
 run:
 	go run cmd/identityoracled/main.go
 
+docs:
+	swagger-ui-watcher ./api/identity-oracle.yaml
+
 migrate:
 	@$(GOOSE) up
 
