@@ -85,11 +85,10 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 	userID := uuid.New().String()
 
 	if o.Approver != nil {
-		if status, description, err := o.Approver.ApproveRegistration(ctx, userID,
+		if approved, description, err := o.Approver.ApproveRegistration(ctx, userID,
 			requestData.Entity, requestData.PublicKey); err != nil {
-			web.RespondError(ctx, log, w, err, status)
-			return nil
-		} else if status != 0 {
+			return translate(errors.Wrap(err, "approve registration"))
+		} else if !approved {
 			response := struct {
 				Status string `json:"status"`
 			}{
@@ -244,11 +243,11 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 	return nil
 }
 
-// UpdateEntity updates the users entity information.
-func (o *Oracle) UpdateEntity(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+// UpdateIdentity updates the users identity information.
+func (o *Oracle) UpdateIdentity(ctx context.Context, log logger.Logger, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
-	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.UpdateEntity")
+	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.UpdateIdentity")
 	defer span.End()
 
 	var requestData struct {
@@ -275,6 +274,13 @@ func (o *Oracle) UpdateEntity(ctx context.Context, log logger.Logger, w http.Res
 
 	// Verify signature is valid for user's public key
 	s := sha256.New()
+	userID, err := uuid.Parse(requestData.UserID)
+	if err != nil {
+		return translate(errors.Wrap(err, "parse user id"))
+	}
+	if _, err := s.Write(userID[:]); err != nil {
+		return translate(errors.Wrap(err, "write user id"))
+	}
 	if err := requestData.Entity.WriteDeterministic(s); err != nil {
 		return translate(errors.Wrap(err, "write entity"))
 	}
@@ -286,11 +292,10 @@ func (o *Oracle) UpdateEntity(ctx context.Context, log logger.Logger, w http.Res
 	}
 
 	if o.Approver != nil {
-		if status, description, err := o.Approver.UpdateEntity(ctx, user.ID,
+		if approved, description, err := o.Approver.UpdateIdentity(ctx, user.ID,
 			requestData.Entity); err != nil {
-			web.RespondError(ctx, log, w, err, status)
-			return nil
-		} else if status != 0 {
+			return translate(errors.Wrap(err, "approve update entity"))
+		} else if !approved {
 			response := struct {
 				Status string `json:"status"`
 			}{

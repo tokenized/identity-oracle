@@ -1,6 +1,6 @@
 post:
   tags: [oracle]
-  summary: Updates the entity information for a user.
+  summary: Updates the identity information for a user.
   requestBody:
     required: true
     content:

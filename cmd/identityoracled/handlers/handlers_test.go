@@ -285,6 +285,9 @@ func TestUpdateEntity(t *testing.T) {
 
 	// Sign entity
 	s := sha256.New()
+	if _, err := s.Write(userID[:]); err != nil {
+		t.Fatalf("Failed to write user id : %s", err)
+	}
 	if err := requestData.Entity.WriteDeterministic(s); err != nil {
 		t.Fatalf("Failed to write entity : %s", err)
 	}
@@ -311,10 +314,10 @@ func TestUpdateEntity(t *testing.T) {
 		header: http.Header{},
 	}
 
-	// Insert XPub
-	err = handler.UpdateEntity(ctx, test.Log, response, request, params)
+	// Update Identity
+	err = handler.UpdateIdentity(ctx, test.Log, response, request, params)
 	if err != nil {
-		t.Fatalf("Failed to update entity : %s", err)
+		t.Fatalf("Failed to update identity : %s", err)
 	}
 
 	if response.StatusCode != 200 {

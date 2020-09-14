@@ -58,10 +58,9 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 	}
 
 	if v.Approver != nil {
-		if status, description, err := v.Approver.ApproveIdentity(ctx, user.ID); err != nil {
-			web.RespondError(ctx, log, w, err, status)
-			return nil
-		} else if status != 0 {
+		if approved, description, err := v.Approver.ApproveIdentity(ctx, user.ID); err != nil {
+			return translate(errors.Wrap(err, "approve identity"))
+		} else if !approved {
 			response := struct {
 				Status string `json:"status"`
 			}{
@@ -135,10 +134,9 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 	}
 
 	if v.Approver != nil {
-		if status, description, err := v.Approver.ApproveIdentity(ctx, user.ID); err != nil {
-			web.RespondError(ctx, log, w, err, status)
-			return nil
-		} else if status != 0 {
+		if approved, description, err := v.Approver.ApproveIdentity(ctx, user.ID); err != nil {
+			return translate(errors.Wrap(err, "approve identity"))
+		} else if !approved {
 			response := struct {
 				Status string `json:"status"`
 			}{
@@ -214,10 +212,9 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 	}
 
 	if v.Approver != nil {
-		if status, description, err := v.Approver.ApproveIdentity(ctx, user.ID); err != nil {
-			web.RespondError(ctx, log, w, err, status)
-			return nil
-		} else if status != 0 {
+		if approved, description, err := v.Approver.ApproveIdentity(ctx, user.ID); err != nil {
+			return translate(errors.Wrap(err, "approve identity"))
+		} else if !approved {
 			response := struct {
 				Status string `json:"status"`
 			}{
