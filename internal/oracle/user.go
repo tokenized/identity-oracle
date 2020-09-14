@@ -2,6 +2,7 @@ package oracle
 
 import (
 	"context"
+	"time"
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/pkg/bitcoin"
@@ -86,4 +87,29 @@ func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKe
 		return nil, err
 	}
 	return user, nil
+}
+
+func UpdateUser(ctx context.Context, dbConn *db.DB, user *User) error {
+
+	sql := `UPDATE users
+		SET
+			entity=$2,
+			date_modified=$3
+		WHERE id=$1`
+
+	// Verify entity format
+	entity := &actions.EntityField{}
+	if err := proto.Unmarshal(user.Entity, entity); err != nil {
+		return errors.Wrap(err, "deserialize entity")
+	}
+
+	user.DateModified = time.Now()
+	if err := dbConn.Execute(ctx, sql,
+		user.ID,
+		user.Entity,
+		user.DateModified); err != nil {
+		return err
+	}
+
+	return nil
 }

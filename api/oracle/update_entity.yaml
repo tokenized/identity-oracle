@@ -1,0 +1,24 @@
+post:
+  tags: [oracle]
+  summary: Updates the entity information for a user.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            user_id:
+              type: string
+              example: "9706702a-ee87-4b14-ac29-7cc56abfe5db"
+            entity:
+              $ref: "#/components/schemas/Entity"
+            signature:
+              type: string
+
+  responses:
+    200:
+      description: Successful operation
+
+    404:
+      description: User not found

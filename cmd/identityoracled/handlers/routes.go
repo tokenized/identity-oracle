@@ -38,6 +38,7 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 	app.Handle("POST", "/oracle/register", oh.Register)
 	app.Handle("POST", "/oracle/addXPub", oh.AddXPub)
 	app.Handle("POST", "/oracle/user", oh.User)
+	app.Handle("POST", "/oracle/updateEntity", oh.UpdateEntity)
 
 	th := Transfers{
 		Config:                            config,

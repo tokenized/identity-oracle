@@ -244,4 +244,74 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 	return nil
 }
 
-// TODO Change Entity Data?
+// UpdateEntity updates the users entity information.
+func (o *Oracle) UpdateEntity(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+	r *http.Request, params map[string]string) error {
+
+	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.UpdateEntity")
+	defer span.End()
+
+	var requestData struct {
+		UserID    string              `json:"user_id" validate:"required"`
+		Entity    actions.EntityField `json:"entity" validate:"required"`
+		Signature bitcoin.Signature   `json:"signature" validate:"required"`
+	}
+
+	if err := web.Unmarshal(r.Body, &requestData); err != nil {
+		return translate(errors.Wrap(err, "unmarshal request"))
+	}
+
+	dbConn := o.MasterDB.Copy()
+	defer dbConn.Close()
+
+	// Fetch User
+	user, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
+	if err != nil {
+		if err == db.ErrNotFound {
+			return web.ErrNotFound // User doesn't exist
+		}
+		return translate(errors.Wrap(err, "fetch user"))
+	}
+
+	// Verify signature is valid for user's public key
+	s := sha256.New()
+	if err := requestData.Entity.WriteDeterministic(s); err != nil {
+		return translate(errors.Wrap(err, "write entity"))
+	}
+	hash := sha256.Sum256(s.Sum(nil))
+
+	if !requestData.Signature.Verify(hash[:], user.PublicKey) {
+		web.Respond(ctx, log, w, nil, http.StatusUnauthorized)
+		return nil
+	}
+
+	if o.Approver != nil {
+		if status, description, err := o.Approver.UpdateEntity(ctx, user.ID,
+			requestData.Entity); err != nil {
+			web.RespondError(ctx, log, w, err, status)
+			return nil
+		} else if status != 0 {
+			response := struct {
+				Status string `json:"status"`
+			}{
+				Status: description,
+			}
+			web.Respond(ctx, log, w, response, http.StatusForbidden)
+			return nil
+		}
+	}
+
+	// Update user in database
+	entityBytes, err := proto.Marshal(&requestData.Entity)
+	if err != nil {
+		return translate(errors.Wrap(err, "protobuf marshal entity"))
+	}
+	user.Entity = entityBytes
+
+	if err := oracle.UpdateUser(ctx, dbConn, user); err != nil {
+		return translate(errors.Wrap(err, "update user"))
+	}
+
+	web.Respond(ctx, log, w, nil, http.StatusOK)
+	return nil
+}

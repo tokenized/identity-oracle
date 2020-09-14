@@ -19,6 +19,15 @@ type ApproverInterface interface {
 	ApproveRegistration(ctx context.Context, userID string, entity actions.EntityField,
 		publicKey bitcoin.PublicKey) (int, string, error)
 
+	// UpdateEntity provides new entity information for a user to the approver.
+	// Returns:
+	//   bool - approved
+	//   string - description of approval or rejection
+	//   error - error
+	// 0, nil means approved.
+	// anything except zero will be returned to the user as an http status code with the error text.
+	UpdateEntity(ctx context.Context, userID string, entity actions.EntityField) (int, string, error)
+
 	// ApproveTransfer approves the receive of a token.
 	// Returns:
 	//   bool - approved

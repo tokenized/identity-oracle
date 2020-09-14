@@ -43,6 +43,8 @@ paths:
     $ref: "./oracle/add_xpub.yaml"
   /oracle/user:
     $ref: "./oracle/user.yaml"
+  /oracle/updateEntity:
+    $ref: "./oracle/update_entity.yaml"
 
   # Transfer
   /transfer/approve:
