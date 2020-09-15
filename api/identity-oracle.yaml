@@ -43,6 +43,8 @@ paths:
     $ref: "./oracle/add_xpub.yaml"
   /oracle/user:
     $ref: "./oracle/user.yaml"
+  /oracle/updateIdentity:
+    $ref: "./oracle/update_identity.yaml"
 
   # Transfer
   /transfer/approve:
@@ -53,6 +55,8 @@ paths:
     $ref: "./identity/verify_pub_key.yaml"
   /identity/verifyXPub:
     $ref: "./identity/verify_xpub.yaml"
+  /identity/verifyAdmin:
+    $ref: "./identity/verify_admin.yaml"
 
 components:
   schemas:
@@ -60,3 +64,7 @@ components:
       $ref: ./_components/schemas/Entity.yaml
     TransferApproval:
       $ref: ./_components/schemas/TransferApproval.yaml
+    AdministratorField:
+      $ref: ./_components/schemas/AdministratorField.yaml
+    ManagerField:
+      $ref: ./_components/schemas/ManagerField.yaml

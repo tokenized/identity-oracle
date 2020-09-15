@@ -26,8 +26,7 @@ func (h *Health) Health(ctx context.Context, log logger.Logger, w http.ResponseW
 		web.Respond(ctx, log, w, status, http.StatusInternalServerError)
 	}
 
-	status.Status = "ok"
-	web.Respond(ctx, log, w, status, http.StatusOK)
+	web.Respond(ctx, log, w, nil, http.StatusOK)
 	return nil
 }
 

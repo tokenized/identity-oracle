@@ -2,8 +2,8 @@ package oracle
 
 import (
 	"context"
-	"errors"
 
+	"github.com/pkg/errors"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/pkg/bitcoin"
 
@@ -37,7 +37,7 @@ func CreateXPub(ctx context.Context, dbConn *db.DB, xpub *XPub) error {
 		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT ON CONSTRAINT xpubs_unique DO NOTHING`
 
-	xpub.ID = uuid.New()
+	xpub.ID = uuid.New().String()
 
 	if err := dbConn.Execute(ctx, sql,
 		xpub.ID,
@@ -51,23 +51,25 @@ func CreateXPub(ctx context.Context, dbConn *db.DB, xpub *XPub) error {
 	return nil
 }
 
-func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpubs bitcoin.ExtendedKeys) (XPub, error) {
+func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpubs bitcoin.ExtendedKeys) (*XPub, error) {
 	sql := `SELECT ` + XPubColumns + `
 		FROM
 			xpubs xp
 		WHERE
 			xp.xpub = ?`
 
-	result := XPub{}
-	err := dbConn.Get(ctx, &result, sql, xpubs)
-	if err == db.ErrNotFound {
-		err = ErrXPubNotFound
+	result := &XPub{}
+	if err := dbConn.Get(ctx, result, sql, xpubs); err != nil {
+		if errors.Cause(err) == db.ErrNotFound {
+			err = ErrXPubNotFound
+		}
+		return nil, err
 	}
-	return result, err
+	return result, nil
 }
 
 func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB,
-	xpubs bitcoin.ExtendedKeys) (uuid.UUID, error) {
+	xpubs bitcoin.ExtendedKeys) (*string, error) {
 
 	sql := `SELECT user_id
 		FROM
@@ -75,10 +77,12 @@ func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB,
 		WHERE
 			xpubs.xpub = ?`
 
-	var result uuid.UUID
-	err := dbConn.Get(ctx, &result, sql, xpubs)
-	if err == db.ErrNotFound {
-		err = ErrXPubNotFound
+	var result string
+	if err := dbConn.Get(ctx, &result, sql, xpubs); err != nil {
+		if errors.Cause(err) == db.ErrNotFound {
+			err = ErrXPubNotFound
+		}
+		return nil, err
 	}
-	return result, err
+	return &result, nil
 }

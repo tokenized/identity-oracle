@@ -20,8 +20,14 @@ dist:
 run:
 	go run cmd/identityoracled/main.go
 
+docs:
+	swagger-ui-watcher ./api/identity-oracle.yaml
+
 migrate:
 	@$(GOOSE) up
+
+migrate-down:
+	@$(GOOSE) down
 
 migrate-rebuild:
 	@$(GOOSE) down-to 0 && $(GOOSE) up

@@ -9,8 +9,10 @@ post:
           type: object
           properties:
             entity:
-              type: string
+              $ref: "#/components/schemas/Entity"
             public_key:
+              type: string
+            signature:
               type: string
 
   responses:

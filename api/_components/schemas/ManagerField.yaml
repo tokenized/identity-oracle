@@ -1,0 +1,14 @@
+
+description:  >
+  Manager is used to refer to a role that is responsible for the Management of an Entity.
+type: object
+properties:
+  Type:
+    description: CEO, COO, CFO, etc. Found in 'Roles' in Specification/Resources
+    type: number
+    example: 5
+  Name:
+    description: Length 0-255 bytes. 0 is valid.
+    type: string
+    example: "Satoshi Nakamoto"
+

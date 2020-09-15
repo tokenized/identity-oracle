@@ -2,13 +2,13 @@ package oracle
 
 import (
 	"context"
+	"time"
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/specification/dist/golang/actions"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -19,7 +19,6 @@ const (
 		u.public_key,
 		u.date_created,
 		u.date_modified,
-		u.approved,
 		u.is_deleted`
 )
 
@@ -32,10 +31,9 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user *User) error {
 			public_key,
 			date_created,
 			date_modified,
-			approved,
 			is_deleted
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?)`
 
 	// Verify entity format
 	entity := &actions.EntityField{}
@@ -43,15 +41,12 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user *User) error {
 		return errors.Wrap(err, "deserialize entity")
 	}
 
-	user.ID = uuid.New()
-
 	if err := dbConn.Execute(ctx, sql,
 		user.ID,
 		user.Entity,
 		user.PublicKey,
 		user.DateCreated,
 		user.DateModified,
-		user.Approved,
 		user.IsDeleted); err != nil {
 		return err
 	}
@@ -59,31 +54,52 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user *User) error {
 	return nil
 }
 
-func FetchUser(ctx context.Context, dbConn *db.DB, id uuid.UUID) (User, error) {
-	sql := `SELECT ` + UserColumns + `
-		FROM
-			users u
-		WHERE
-			u.id=?`
+func FetchUser(ctx context.Context, dbConn *db.DB, id string) (*User, error) {
+	sql := `SELECT ` + UserColumns + ` FROM users u WHERE u.id=? AND u.is_deleted=false`
 
-	user := User{}
-	err := dbConn.Get(ctx, &user, sql, id)
-	return user, err
+	user := &User{}
+	if err := dbConn.Get(ctx, user, sql, id); err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
-func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (User, error) {
+func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (*User, error) {
 	sql := `SELECT ` + UserColumns + `
 		FROM
 			users u,
 			xpubs
 		WHERE
 			xpubs.xpub = ?
-			AND xpubs.user_id=u.id`
+			AND xpubs.user_id=u.id
+			AND u.is_deleted=false`
 
-	user := User{}
-	err := dbConn.Get(ctx, &user, sql, xpub)
-	if err == db.ErrNotFound {
-		err = ErrXPubNotFound
+	user := &User{}
+	if err := dbConn.Get(ctx, user, sql, xpub); err != nil {
+		if errors.Cause(err) == db.ErrNotFound {
+			err = ErrXPubNotFound
+		}
+		return nil, err
 	}
-	return user, err
+	return user, nil
+}
+
+func UpdateUser(ctx context.Context, dbConn *db.DB, user *User) error {
+	sql := `UPDATE users SET entity=$2, date_modified=$3 WHERE id=$1`
+
+	// Verify entity format
+	entity := &actions.EntityField{}
+	if err := proto.Unmarshal(user.Entity, entity); err != nil {
+		return errors.Wrap(err, "deserialize entity")
+	}
+
+	user.DateModified = time.Now()
+	if err := dbConn.Execute(ctx, sql,
+		user.ID,
+		user.Entity,
+		user.DateModified); err != nil {
+		return err
+	}
+
+	return nil
 }

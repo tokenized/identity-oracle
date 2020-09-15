@@ -52,8 +52,27 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
 
+	user, err := oracle.FetchUserByXPub(ctx, dbConn, bitcoin.ExtendedKeys{requestData.XPub})
+	if err != nil {
+		return translate(errors.Wrap(err, "fetch user"))
+	}
+
+	if v.Approver != nil {
+		if approved, description, err := v.Approver.ApproveIdentity(ctx, user.ID); err != nil {
+			return translate(errors.Wrap(err, "approve identity"))
+		} else if !approved {
+			response := struct {
+				Status string `json:"status"`
+			}{
+				Status: description,
+			}
+			web.Respond(ctx, log, w, response, http.StatusForbidden)
+			return nil
+		}
+	}
+
 	// Verify that the public key is associated with the entity.
-	sigHash, err := oracle.VerifyPubKey(ctx, dbConn, v.BlockHandler, &requestData.Entity,
+	sigHash, err := oracle.VerifyPubKey(ctx, user, v.BlockHandler, &requestData.Entity,
 		requestData.XPub, requestData.Index)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify pub key"))
@@ -109,8 +128,27 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
 
+	user, err := oracle.FetchUserByXPub(ctx, dbConn, requestData.XPubs)
+	if err != nil {
+		return translate(errors.Wrap(err, "fetch user"))
+	}
+
+	if v.Approver != nil {
+		if approved, description, err := v.Approver.ApproveIdentity(ctx, user.ID); err != nil {
+			return translate(errors.Wrap(err, "approve identity"))
+		} else if !approved {
+			response := struct {
+				Status string `json:"status"`
+			}{
+				Status: description,
+			}
+			web.Respond(ctx, log, w, response, http.StatusForbidden)
+			return nil
+		}
+	}
+
 	// Verify that the public key is associated with the entity.
-	sigHash, err := oracle.VerifyXPub(ctx, dbConn, v.BlockHandler, &requestData.Entity,
+	sigHash, err := oracle.VerifyXPub(ctx, user, v.BlockHandler, &requestData.Entity,
 		requestData.XPubs)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify xpub"))
@@ -168,11 +206,30 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
 
+	user, err := oracle.FetchUserByXPub(ctx, dbConn, requestData.XPubs)
+	if err != nil {
+		return translate(errors.Wrap(err, "fetch user"))
+	}
+
+	if v.Approver != nil {
+		if approved, description, err := v.Approver.ApproveIdentity(ctx, user.ID); err != nil {
+			return translate(errors.Wrap(err, "approve identity"))
+		} else if !approved {
+			response := struct {
+				Status string `json:"status"`
+			}{
+				Status: description,
+			}
+			web.Respond(ctx, log, w, response, http.StatusForbidden)
+			return nil
+		}
+	}
+
 	expiration := uint64(time.Now().Add(time.Duration(v.IdentityExpirationDurationSeconds) *
 		time.Second).UnixNano())
 
 	// Verify that the public key is associated with the entity.
-	sigHash, err := oracle.CreateAdminCertificate(ctx, dbConn, v.Config.Net, v.Config.IsTest,
+	sigHash, err := oracle.CreateAdminCertificate(ctx, dbConn, user, v.Config.Net, v.Config.IsTest,
 		v.BlockHandler, requestData.XPubs, requestData.Index, requestData.Issuer,
 		requestData.Contract, expiration)
 	if err != nil {

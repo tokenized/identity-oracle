@@ -8,7 +8,7 @@ post:
         schema:
           type: object
           properties:
-            xpub:
+            xpubs:
               type: string
             index:
               type: number

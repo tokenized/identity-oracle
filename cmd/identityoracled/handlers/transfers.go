@@ -70,7 +70,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		approved, description, approveErr = t.Approver.ApproveTransfer(ctx, requestData.Contract,
 			requestData.AssetID, user.ID)
 		if approveErr != nil {
-			return translate(errors.Wrap(err, "approver"))
+			return translate(errors.Wrap(err, "approve transfer"))
 		}
 	}
 
@@ -82,7 +82,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		requestData.Contract, requestData.AssetID, requestData.XPubs, requestData.Index, expiration,
 		approved)
 	if err != nil {
-		return translate(errors.Wrap(err, "approve transfer"))
+		return translate(errors.Wrap(err, "create signature"))
 	}
 
 	sig, err := t.Key.Sign(sigHash[:])

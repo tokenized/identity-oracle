@@ -1,6 +1,6 @@
 post:
   tags: [oracle]
-  summary: Adds an xpub to the specified user.
+  summary: Updates the identity information for a user.
   requestBody:
     required: true
     content:
@@ -11,14 +11,14 @@ post:
             user_id:
               type: string
               example: "9706702a-ee87-4b14-ac29-7cc56abfe5db"
-            xpubs:
-              type: string
-            required_signers:
-              type: string
-              example: "1"
+            entity:
+              $ref: "#/components/schemas/Entity"
             signature:
               type: string
 
   responses:
     200:
       description: Successful operation
+
+    404:
+      description: User not found

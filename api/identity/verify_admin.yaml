@@ -1,6 +1,6 @@
 post:
   tags: [identity]
-  summary: Requests a signature for an entity and pub key association.
+  summary: Requests a admin identity certificate to include in a contract offer action.
   requestBody:
     required: true
     content:
@@ -8,12 +8,14 @@ post:
         schema:
           type: object
           properties:
-            xpub:
+            xpubs:
               type: string
             index:
               type: number
-            entity:
+            issuer:
               $ref: "#/components/schemas/Entity"
+            entity_contract:
+              type: string
 
   responses:
     200:
@@ -27,11 +29,11 @@ post:
                 type: boolean
               description:
                 type: string
-              algorithm:
-                type: number
               signature:
                 type: string
               block_height:
+                type: number
+              expiration:
                 type: number
 
     404:
