@@ -55,12 +55,7 @@ func CreateUser(ctx context.Context, dbConn *db.DB, user *User) error {
 }
 
 func FetchUser(ctx context.Context, dbConn *db.DB, id string) (*User, error) {
-	sql := `SELECT ` + UserColumns + `
-		FROM
-			users u
-		WHERE
-			u.id=?
-			AND u.is_deleted=false`
+	sql := `SELECT ` + UserColumns + ` FROM users u WHERE u.id=? AND u.is_deleted=false`
 
 	user := &User{}
 	if err := dbConn.Get(ctx, user, sql, id); err != nil {
@@ -90,12 +85,7 @@ func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKe
 }
 
 func UpdateUser(ctx context.Context, dbConn *db.DB, user *User) error {
-
-	sql := `UPDATE users
-		SET
-			entity=$2,
-			date_modified=$3
-		WHERE id=$1`
+	sql := `UPDATE users SET entity=$2, date_modified=$3 WHERE id=$1`
 
 	// Verify entity format
 	entity := &actions.EntityField{}
