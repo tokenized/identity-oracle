@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,28 +28,10 @@ func Run(approver oracle.ApproverInterface) {
 	// ---------------------------------------------------------------------------------------------
 	// Logging
 
-	var logConfig *logger.Config
-	if strings.ToUpper(os.Getenv("DEVELOPMENT")) == "TRUE" {
-		if strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT" {
-			logConfig = logger.NewDevelopmentTextConfig()
-		} else {
-			logConfig = logger.NewDevelopmentConfig()
-		}
-	} else {
-		if strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT" {
-			logConfig = logger.NewProductionTextConfig()
-		} else {
-			logConfig = logger.NewProductionConfig()
-		}
-	}
+	logPath := os.Getenv("LOG_FILE_PATH")
 
-	logFileName := os.Getenv("LOG_FILE_PATH")
-	if len(logFileName) > 0 {
-		if err := logConfig.Main.AddFile(logFileName); err != nil {
-			fmt.Printf("Failed to add log file : %s\n", err)
-			return
-		}
-	}
+	logConfig := logger.NewConfig(strings.ToUpper(os.Getenv("DEVELOPMENT")) == "TRUE",
+		strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT", logPath)
 
 	logConfig.EnableSubSystem(rpcnode.SubSystem)
 	logConfig.EnableSubSystem(spynode.SubSystem)
