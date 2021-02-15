@@ -6,10 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/tokenized/identity-oracle/internal/platform/config"
+	"github.com/tokenized/config"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/logger"
 
 	"github.com/google/uuid"
 )
@@ -38,9 +39,12 @@ func New() *Test {
 	// ============================================================
 	// Configuration
 
-	cfg, err := config.Environment()
-	if err != nil {
-		log.Fatalf("main : Parsing Config : %v", err)
+	ctx := context.Background()
+
+	cfg := &Config{}
+	// load config using sane fallbacks
+	if err := config.LoadConfig(ctx, cfg); err != nil {
+		logger.Fatal(ctx, "main : LoadConfig : %v", err)
 	}
 
 	// ============================================================
@@ -61,9 +65,9 @@ func New() *Test {
 	// Web Config
 
 	webConfig := &web.Config{
-		RootURL: cfg.Web.RootURL,
-		Net:     bitcoin.NetworkFromString(cfg.Bitcoin.Network),
-		IsTest:  cfg.Bitcoin.IsTest,
+		RootURL: "http://localhost:8081",
+		Net:     bitcoin.MainNet,
+		IsTest:  true,
 	}
 
 	return &Test{log, masterDB, webConfig}
@@ -85,4 +89,11 @@ func Context() context.Context {
 	ctx := context.WithValue(context.Background(), web.KeyValues, &values)
 
 	return web.ContextWithValues(ctx, bitcoin.MainNet, true)
+}
+
+type Config struct {
+	Db struct {
+		Driver string `default:"postgres" envconfig:"DB_DRIVER" json:"DB_DRIVER"`
+		URL    string `default:"user=foo dbname=bar sslmode=disable" envconfig:"DB_URL" json:"DB_URL"`
+	}
 }

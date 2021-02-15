@@ -20,7 +20,7 @@ type Transfers struct {
 	Config                            *web.Config
 	MasterDB                          *db.DB
 	Key                               bitcoin.Key
-	BlockHandler                      *oracle.BlockHandler
+	Headers                           oracle.Headers
 	TransferExpirationDurationSeconds int
 
 	Approver oracle.ApproverInterface
@@ -78,7 +78,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		time.Second).UnixNano())
 
 	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
-	sigHash, height, hash, err := oracle.CreateReceiveSignature(ctx, dbConn, t.BlockHandler,
+	sigHash, height, blockHash, err := oracle.CreateReceiveSignature(ctx, dbConn, t.Headers,
 		requestData.Contract, requestData.AssetID, requestData.XPubs, requestData.Index, expiration,
 		approved)
 	if err != nil {
@@ -104,7 +104,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		SigAlgorithm: 1,
 		Sig:          sig,
 		BlockHeight:  height,
-		BlockHash:    hash,
+		BlockHash:    blockHash,
 		Expiration:   expiration,
 	}
 

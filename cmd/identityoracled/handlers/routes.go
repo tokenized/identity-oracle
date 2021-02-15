@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/tokenized/identity-oracle/internal/mid"
@@ -12,10 +13,12 @@ import (
 )
 
 // API returns a handler for a set of routes.
-func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key,
-	contractAddress bitcoin.RawAddress, blockHandler *oracle.BlockHandler,
+func API(ctx context.Context, config *web.Config, masterDB *db.DB, key bitcoin.Key,
+	contractAddress bitcoin.RawAddress, headers oracle.Headers, contracts oracle.Contracts,
 	transferExpirationDurationSeconds, identityExpirationDurationSeconds int,
 	approver oracle.ApproverInterface) http.Handler {
+
+	log := logger.NewLoggerObject(ctx)
 
 	app := web.New(config, log, mid.RequestLogger, mid.Metrics, mid.ErrorHandler, mid.CORS)
 
@@ -44,7 +47,7 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 		Config:                            config,
 		MasterDB:                          masterDB,
 		Key:                               key,
-		BlockHandler:                      blockHandler,
+		Headers:                           headers,
 		TransferExpirationDurationSeconds: transferExpirationDurationSeconds,
 		Approver:                          approver,
 	}
@@ -54,7 +57,8 @@ func API(log logger.Logger, config *web.Config, masterDB *db.DB, key bitcoin.Key
 		Config:                            config,
 		MasterDB:                          masterDB,
 		Key:                               key,
-		BlockHandler:                      blockHandler,
+		Headers:                           headers,
+		Contracts:                         contracts,
 		IdentityExpirationDurationSeconds: identityExpirationDurationSeconds,
 		Approver:                          approver,
 	}
