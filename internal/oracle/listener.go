@@ -66,7 +66,7 @@ func (l *Listener) RecentSigHash(ctx context.Context) (*bitcoin.Hash32, uint32, 
 		return nil, 0, errors.New("Not enough headers")
 	}
 
-	return &l.hashes[len(l.hashes)-l.offset-1], l.height - uint32(l.offset), nil
+	return &l.hashes[0], l.height - uint32(l.offset), nil
 }
 
 func (l *Listener) GetContractFormation(ctx context.Context,
@@ -135,54 +135,42 @@ func (l *Listener) HandleHeaders(ctx context.Context, headers *client.Headers) {
 
 	l.hashesLock.Lock()
 
-	l.height = newHeight
+	// Append any matching
+	latest := l.hashes[len(l.hashes)-1]
+	appendedCount := 0
+	for _, header := range headers.Headers {
+		if header.PrevBlock.Equal(&latest) {
+			// Add as new latest
+			latest = *header.BlockHash()
+			l.hashes = append(l.hashes, latest)
+			l.height++
+			appendedCount++
+			continue
+		}
 
-	currentCount := len(l.hashes)
-	if currentCount > 0 {
-		last := l.hashes[currentCount-1]
-		if !headers.Headers[0].PrevBlock.Equal(&last) {
-			// not consecutive headers so dump current headers
-			logger.Info(ctx, "Not next header : current latest %s, new previous %s", last,
-				headers.Headers[0].PrevBlock)
-			l.hashes = nil
-			currentCount = 0
+		// Check for earlier match
+		for i, hash := range l.hashes {
+			if header.PrevBlock.Equal(&hash) {
+				// Drop hashes after this and replace with new branch
+				removeCount := len(l.hashes) - (i + 1)
+				logger.Info(ctx, "Reorging out %d headers to %s", removeCount, hash)
+				l.height -= uint32(removeCount)
+				l.hashes = l.hashes[:i]
+
+				// Add as new latest
+				latest = *header.BlockHash()
+				l.hashes = append(l.hashes, latest)
+				l.height++
+				appendedCount++
+				break
+			}
 		}
 	}
 
-	if currentCount == 0 || count >= l.offset {
-		// Either no current headers or the new set of headers is longer than we need so overwrite
-		// with the current set.
-		if count > l.offset {
-			// Only keep the last "offset" count
-			headers.Headers = headers.Headers[count-l.offset-1:]
-		}
-
-		l.hashes = make([]bitcoin.Hash32, len(headers.Headers))
-		for i, header := range headers.Headers {
-			l.hashes[i] = *header.BlockHash()
-		}
-	} else {
-		newLength := currentCount + count
-		if newLength > l.offset {
-			// Trim oldest current headers
-			trimCount := newLength - l.offset
-			l.hashes = l.hashes[trimCount:]
-		}
-
-		// Append new headers
-		for _, header := range headers.Headers {
-			l.hashes = append(l.hashes, *header.BlockHash())
-		}
-	}
-
-	currentCount = len(l.hashes)
 	l.hashesLock.Unlock()
-
-	if currentCount < l.offset {
-		logger.Info(ctx, "Re-initializing headers")
-		if err := l.InitializeHeaders(ctx); err != nil {
-			logger.Error(ctx, "Failed to re-initialize headers : %s", err)
-		}
+	logger.Info(ctx, "Appended %d headers", appendedCount)
+	if err := l.cleanHashes(ctx); err != nil {
+		logger.Error(ctx, "Failed to clean hashes : %s", err)
 	}
 }
 
@@ -240,7 +228,37 @@ func (l *Listener) HandleMessage(ctx context.Context, payload client.MessagePayl
 	}
 }
 
+func (l *Listener) cleanHashes(ctx context.Context) error {
+	l.hashesLock.Lock()
+
+	// Check if too many hashes and trim oldest
+	currentCount := len(l.hashes)
+	if currentCount > l.offset {
+		trimCount := currentCount - l.offset
+		l.hashes = l.hashes[trimCount:]
+		currentCount = l.offset
+		l.hashesLock.Unlock()
+		return nil
+	}
+
+	l.hashesLock.Unlock()
+
+	// Check if not enough hashes and request new.
+	if currentCount < l.offset {
+		logger.Info(ctx, "Re-initializing headers")
+		if err := l.InitializeHeaders(ctx); err != nil {
+			return errors.Wrap(err, "initialize headers")
+		}
+	}
+
+	return nil
+}
+
 func (l *Listener) InitializeHeaders(ctx context.Context) error {
+	if l.spyNode == nil {
+		return errors.New("No spynode to initialize headers")
+	}
+
 	headers, err := l.spyNode.GetHeaders(ctx, -1, l.offset)
 	if err != nil {
 		return errors.Wrap(err, "get headers")
