@@ -3,11 +3,11 @@ package oracle
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/pkg/bitcoin"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 const (

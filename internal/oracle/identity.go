@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func VerifyPubKey(ctx context.Context, user *User, blockHandler *BlockHandler,
+func VerifyPubKey(ctx context.Context, user *User, headers Headers,
 	entity *actions.EntityField, xpub bitcoin.ExtendedKey, index uint32) (*SignatureHash, error) {
 
 	userEntity := &actions.EntityField{}
@@ -32,7 +32,7 @@ func VerifyPubKey(ctx context.Context, user *User, blockHandler *BlockHandler,
 	}
 
 	// Get block hash for tip - 4
-	blockHash, height, err := blockHandler.SigHash(ctx)
+	blockHash, height, err := headers.RecentSigHash(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get sig block hash")
 	}
@@ -45,7 +45,7 @@ func VerifyPubKey(ctx context.Context, user *User, blockHandler *BlockHandler,
 
 	pubKey := xpubKey.PublicKey()
 
-	hash, err := protocol.EntityPubKeyOracleSigHash(ctx, entity, pubKey, blockHash, approve)
+	hash, err := protocol.EntityPubKeyOracleSigHash(ctx, entity, pubKey, *blockHash, approve)
 	if err != nil {
 		return nil, errors.Wrap(err, "generate signature")
 	}
@@ -58,7 +58,7 @@ func VerifyPubKey(ctx context.Context, user *User, blockHandler *BlockHandler,
 	}, nil
 }
 
-func VerifyXPub(ctx context.Context, user *User, blockHandler *BlockHandler,
+func VerifyXPub(ctx context.Context, user *User, headers Headers,
 	entity *actions.EntityField, xpub bitcoin.ExtendedKeys) (*SignatureHash, error) {
 
 	userEntity := &actions.EntityField{}
@@ -77,12 +77,12 @@ func VerifyXPub(ctx context.Context, user *User, blockHandler *BlockHandler,
 	}
 
 	// Get block hash for tip - 4
-	blockHash, height, err := blockHandler.SigHash(ctx)
+	blockHash, height, err := headers.RecentSigHash(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get sig block hash")
 	}
 
-	hash, err := protocol.EntityXPubOracleSigHash(ctx, entity, xpub, blockHash, approve)
+	hash, err := protocol.EntityXPubOracleSigHash(ctx, entity, xpub, *blockHash, approve)
 	if err != nil {
 		return nil, errors.Wrap(err, "generate signature")
 	}
@@ -102,7 +102,7 @@ func VerifyXPub(ctx context.Context, user *User, blockHandler *BlockHandler,
 //   bitcoin.Hash32 - block hash included in signature hash
 //   bool - true if approved
 func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net bitcoin.Network,
-	isTest bool, blockHandler *BlockHandler, xpubs bitcoin.ExtendedKeys, index uint32,
+	isTest bool, headers Headers, contracts Contracts, xpubs bitcoin.ExtendedKeys, index uint32,
 	issuer actions.EntityField, entityContract bitcoin.RawAddress,
 	expiration uint64) (*SignatureHash, error) {
 
@@ -127,13 +127,13 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net 
 	}
 
 	// Get block hash for tip - 4
-	blockHash, height, err := blockHandler.SigHash(ctx)
+	blockHash, height, err := headers.RecentSigHash(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get sig block hash")
 	}
 
 	logger.Info(ctx, "Admin Address : %s",
-		bitcoin.NewAddressFromRawAddress(adminAddress, net).String())
+		bitcoin.NewAddressFromRawAddress(adminAddress, net))
 
 	approved := true
 	approve := uint8(1)
@@ -147,10 +147,10 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net 
 	} else {
 		entity = entityContract
 		logger.Info(ctx, "Entity Contract : %s",
-			bitcoin.NewAddressFromRawAddress(entityContract, net).String())
+			bitcoin.NewAddressFromRawAddress(entityContract, net))
 
 		// Verify the contract belongs to the user.
-		cf, err := GetContractFormation(ctx, dbConn, entityContract, isTest)
+		cf, err := contracts.GetContractFormation(ctx, entityContract)
 		if err != nil {
 			return nil, errors.Wrap(err, "get contract formation")
 		}
@@ -165,11 +165,11 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net 
 		approve = 0
 	}
 
-	logger.Info(ctx, "Block Hash : %s", blockHash.String())
+	logger.Info(ctx, "Block Hash : %s", blockHash)
 	logger.Info(ctx, "Expiration : %d", expiration)
 	logger.Info(ctx, "Approved : %d", approve)
 
-	hash, err := protocol.ContractAdminIdentityOracleSigHash(ctx, adminAddress, entity, blockHash,
+	hash, err := protocol.ContractAdminIdentityOracleSigHash(ctx, adminAddress, entity, *blockHash,
 		expiration, approve)
 	if err != nil {
 		return nil, errors.Wrap(err, "generate sig hash")

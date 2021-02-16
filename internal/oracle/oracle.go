@@ -16,7 +16,7 @@ import (
 //   uint32 - block height of block hash included in signature hash
 //   bitcoin.Hash32 - block hash included in signature hash
 //   bool - true if transfer is approved
-func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, blockHandler *BlockHandler,
+func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, headers Headers,
 	contract, asset string, xpubs bitcoin.ExtendedKeys, index uint32, expiration uint64,
 	approved bool) ([]byte, uint32, bitcoin.Hash32, error) {
 
@@ -44,7 +44,7 @@ func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, blockHandler *Bl
 	contractRawAddress := bitcoin.NewRawAddressFromAddress(contractAddress)
 
 	// Get block hash for tip - 4
-	blockHash, height, err := blockHandler.SigHash(ctx)
+	blockHash, height, err := headers.RecentSigHash(ctx)
 	if err != nil {
 		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "get sig block hash")
 	}
@@ -61,10 +61,10 @@ func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, blockHandler *Bl
 	}
 
 	sigHash, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, assetCode.Bytes(),
-		receiveAddress, blockHash, expiration, approveValue)
+		receiveAddress, *blockHash, expiration, approveValue)
 	if err != nil {
 		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate signature")
 	}
 
-	return sigHash, height, blockHash, nil
+	return sigHash, height, *blockHash, nil
 }

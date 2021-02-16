@@ -21,7 +21,8 @@ type Verify struct {
 	Config                            *web.Config
 	MasterDB                          *db.DB
 	Key                               bitcoin.Key
-	BlockHandler                      *oracle.BlockHandler
+	Headers                           oracle.Headers
+	Contracts                         oracle.Contracts
 	Approver                          oracle.ApproverInterface
 	IdentityExpirationDurationSeconds int
 }
@@ -72,7 +73,7 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 	}
 
 	// Verify that the public key is associated with the entity.
-	sigHash, err := oracle.VerifyPubKey(ctx, user, v.BlockHandler, &requestData.Entity,
+	sigHash, err := oracle.VerifyPubKey(ctx, user, v.Headers, &requestData.Entity,
 		requestData.XPub, requestData.Index)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify pub key"))
@@ -148,7 +149,7 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 	}
 
 	// Verify that the public key is associated with the entity.
-	sigHash, err := oracle.VerifyXPub(ctx, user, v.BlockHandler, &requestData.Entity,
+	sigHash, err := oracle.VerifyXPub(ctx, user, v.Headers, &requestData.Entity,
 		requestData.XPubs)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify xpub"))
@@ -230,7 +231,7 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 
 	// Verify that the public key is associated with the entity.
 	sigHash, err := oracle.CreateAdminCertificate(ctx, dbConn, user, v.Config.Net, v.Config.IsTest,
-		v.BlockHandler, requestData.XPubs, requestData.Index, requestData.Issuer,
+		v.Headers, v.Contracts, requestData.XPubs, requestData.Index, requestData.Issuer,
 		requestData.Contract, expiration)
 	if err != nil {
 		return translate(errors.Wrap(err, "verify admin"))
