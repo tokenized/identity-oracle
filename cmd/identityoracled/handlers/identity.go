@@ -37,7 +37,7 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 
 	var requestData struct {
 		XPub   bitcoin.ExtendedKey `json:"xpub" validate:"required"`
-		Index  uint32              `json:"index" validate:"required"`
+		Index  uint32              `json:"index"`
 		Entity actions.EntityField `json:"entity" validate:"required"`
 	}
 
@@ -188,7 +188,7 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 
 	var requestData struct {
 		XPubs    bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
-		Index    uint32               `json:"index" validate:"required"`
+		Index    uint32               `json:"index"`
 		Issuer   actions.EntityField  `json:"issuer"`
 		Contract bitcoin.RawAddress   `json:"entity_contract"`
 	}
