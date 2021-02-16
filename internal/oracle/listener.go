@@ -152,7 +152,6 @@ func (l *Listener) HandleHeaders(ctx context.Context, headers *client.Headers) {
 	if currentCount == 0 || count >= l.offset {
 		// Either no current headers or the new set of headers is longer than we need so overwrite
 		// with the current set.
-
 		if count > l.offset {
 			// Only keep the last "offset" count
 			headers.Headers = headers.Headers[count-l.offset-1:]
@@ -162,21 +161,18 @@ func (l *Listener) HandleHeaders(ctx context.Context, headers *client.Headers) {
 		for i, header := range headers.Headers {
 			l.hashes[i] = *header.BlockHash()
 		}
+	} else {
+		newLength := currentCount + count
+		if newLength > l.offset {
+			// Trim oldest current headers
+			trimCount := newLength - l.offset
+			l.hashes = l.hashes[trimCount:]
+		}
 
-		l.hashesLock.Unlock()
-		return
-	}
-
-	newLength := currentCount + count
-	if newLength > l.offset {
-		// Trim oldest current headers
-		trimCount := newLength - l.offset
-		l.hashes = l.hashes[trimCount:]
-	}
-
-	// Append new headers
-	for _, header := range headers.Headers {
-		l.hashes = append(l.hashes, *header.BlockHash())
+		// Append new headers
+		for _, header := range headers.Headers {
+			l.hashes = append(l.hashes, *header.BlockHash())
+		}
 	}
 
 	currentCount = len(l.hashes)
