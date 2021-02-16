@@ -23,6 +23,7 @@ type Oracle struct {
 	listener *oracle.Listener
 	server   *http.Server
 	spyNode  client.Client
+	db       *db.DB
 }
 
 func Setup(ctx context.Context, cfg *Config, spyNode client.Client,
@@ -62,7 +63,6 @@ func Setup(ctx context.Context, cfg *Config, spyNode client.Client,
 	if err != nil {
 		return nil, errors.Wrap(err, "database")
 	}
-	defer masterDB.Close()
 
 	// ---------------------------------------------------------------------------------------------
 	// Web Config
@@ -102,10 +102,12 @@ func Setup(ctx context.Context, cfg *Config, spyNode client.Client,
 		listener: listener,
 		server:   api,
 		spyNode:  spyNode,
+		db:       masterDB,
 	}, nil
 }
 
 func (o *Oracle) Run(ctx context.Context, spyNodeErrors *chan error) error {
+	defer o.db.Close()
 
 	// Make a channel to listen for errors coming from the listener. Use a
 	// buffered channel so the goroutine can exit if we don't collect this error.
