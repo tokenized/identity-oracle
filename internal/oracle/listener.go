@@ -134,7 +134,6 @@ func (l *Listener) HandleHeaders(ctx context.Context, headers *client.Headers) {
 		headers.Headers[count-1].BlockHash())
 
 	l.hashesLock.Lock()
-	defer l.hashesLock.Unlock()
 
 	l.height = newHeight
 
@@ -164,6 +163,7 @@ func (l *Listener) HandleHeaders(ctx context.Context, headers *client.Headers) {
 			l.hashes[i] = *header.BlockHash()
 		}
 
+		l.hashesLock.Unlock()
 		return
 	}
 
@@ -177,6 +177,16 @@ func (l *Listener) HandleHeaders(ctx context.Context, headers *client.Headers) {
 	// Append new headers
 	for _, header := range headers.Headers {
 		l.hashes = append(l.hashes, *header.BlockHash())
+	}
+
+	currentCount = len(l.hashes)
+	l.hashesLock.Unlock()
+
+	if currentCount < l.offset {
+		logger.Info(ctx, "Re-initializing headers")
+		if err := l.InitializeHeaders(ctx); err != nil {
+			logger.Error(ctx, "Failed to re-initialize headers : %s", err)
+		}
 	}
 }
 
