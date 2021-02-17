@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -54,7 +55,7 @@ func NewListener(spyNode client.Client, dbConn *db.DB, net bitcoin.Network, isTe
 		dbConn:  dbConn,
 		net:     net,
 		isTest:  isTest,
-		offset:  4,
+		offset:  5, // tip + 4 previous
 	}
 }
 
@@ -62,11 +63,11 @@ func (l *Listener) RecentSigHash(ctx context.Context) (*bitcoin.Hash32, uint32, 
 	l.hashesLock.Lock()
 	defer l.hashesLock.Unlock()
 
-	if len(l.hashes) < l.offset {
-		return nil, 0, errors.New("Not enough headers")
+	if len(l.hashes) != l.offset {
+		return nil, 0, fmt.Errorf("bad header count : got %d, want %d", len(l.hashes), l.offset)
 	}
 
-	return &l.hashes[0], l.height - uint32(l.offset), nil
+	return &l.hashes[0], l.height - uint32(l.offset) + 1, nil
 }
 
 func (l *Listener) GetContractFormation(ctx context.Context,
@@ -90,7 +91,6 @@ func (l *Listener) GetContractFormation(ctx context.Context,
 	}
 
 	return result, nil
-
 }
 
 func (l *Listener) HandleTx(ctx context.Context, tx *client.Tx) {
@@ -168,6 +168,16 @@ func (l *Listener) HandleHeaders(ctx context.Context, headers *client.Headers) {
 	}
 
 	l.hashesLock.Unlock()
+
+	if appendedCount == 0 {
+		// No link to current hashes. Something must have gone wrong so just rebuild.
+		logger.Info(ctx, "No link to new headers. Reinitializing")
+		if err := l.InitializeHeaders(ctx); err != nil {
+			logger.Error(ctx, "Failed to reinitialize hashes : %s", err)
+		}
+		return
+	}
+
 	logger.Info(ctx, "Appended %d headers", appendedCount)
 	if err := l.cleanHashes(ctx); err != nil {
 		logger.Error(ctx, "Failed to clean hashes : %s", err)
@@ -245,7 +255,7 @@ func (l *Listener) cleanHashes(ctx context.Context) error {
 
 	// Check if not enough hashes and request new.
 	if currentCount < l.offset {
-		logger.Info(ctx, "Re-initializing headers")
+		logger.Info(ctx, "Reinitializing headers")
 		if err := l.InitializeHeaders(ctx); err != nil {
 			return errors.Wrap(err, "initialize headers")
 		}
