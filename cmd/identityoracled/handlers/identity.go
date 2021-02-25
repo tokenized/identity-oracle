@@ -50,10 +50,10 @@ func (v *Verify) PubKeySignature(ctx context.Context, w http.ResponseWriter,
 		return nil
 	}
 
-	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+	logger.InfoWithFields(ctx, []logger.Field{
 		logger.Stringer("xpub", requestData.XPub),
 		logger.Uint32("index", requestData.Index),
-	})
+	}, "Signing public key")
 
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
@@ -131,9 +131,9 @@ func (v *Verify) XPubSignature(ctx context.Context, w http.ResponseWriter,
 		}
 	}
 
-	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+	logger.InfoWithFields(ctx, []logger.Field{
 		logger.Stringer("xpubs", requestData.XPubs),
-	})
+	}, "Signing extended public key")
 
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
@@ -213,10 +213,10 @@ func (v *Verify) AdminCertificate(ctx context.Context, w http.ResponseWriter,
 		}
 	}
 
-	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+	logger.InfoWithFields(ctx, []logger.Field{
 		logger.Stringer("xpubs", requestData.XPubs),
 		logger.Uint32("index", requestData.Index),
-	})
+	}, "Creating admin certificate")
 
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()

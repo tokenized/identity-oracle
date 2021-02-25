@@ -49,26 +49,28 @@ type JSONErrorMeta struct {
 }
 
 // Error handles all error responses for the API.
-func Error(cxt context.Context, w http.ResponseWriter, err error) {
+func Error(ctx context.Context, w http.ResponseWriter, err error) {
+	logger.Info(ctx, "Responding to error : %s", err)
+
 	switch errors.Cause(err) {
 	case ErrNotHealthy:
-		RespondError(cxt, w, err, http.StatusInternalServerError)
+		RespondError(ctx, w, err, http.StatusInternalServerError)
 		return
 
 	case ErrNotFound:
-		RespondError(cxt, w, err, http.StatusNotFound)
+		RespondError(ctx, w, err, http.StatusNotFound)
 		return
 
 	case ErrValidation, ErrInvalidID:
-		RespondError(cxt, w, err, http.StatusBadRequest)
+		RespondError(ctx, w, err, http.StatusBadRequest)
 		return
 
 	case ErrUnauthorized:
-		RespondError(cxt, w, err, http.StatusUnauthorized)
+		RespondError(ctx, w, err, http.StatusUnauthorized)
 		return
 
 	case ErrForbidden:
-		RespondError(cxt, w, err, http.StatusForbidden)
+		RespondError(ctx, w, err, http.StatusForbidden)
 		return
 	}
 
@@ -83,11 +85,11 @@ func Error(cxt context.Context, w http.ResponseWriter, err error) {
 			}},
 		}
 
-		Respond(cxt, w, v, http.StatusUnprocessableEntity)
+		Respond(ctx, w, v, http.StatusUnprocessableEntity)
 		return
 	}
 
-	RespondError(cxt, w, err, http.StatusInternalServerError)
+	RespondError(ctx, w, err, http.StatusInternalServerError)
 }
 
 // RespondError sends JSON describing the error

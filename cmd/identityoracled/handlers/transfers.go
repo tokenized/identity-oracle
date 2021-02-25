@@ -51,10 +51,10 @@ func (t *Transfers) TransferSignature(ctx context.Context, w http.ResponseWriter
 		}
 	}
 
-	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+	logger.InfoWithFields(ctx, []logger.Field{
 		logger.Stringer("xpubs", requestData.XPubs),
 		logger.Uint32("index", requestData.Index),
-	})
+	}, "Creating transfer certificate")
 
 	dbConn := t.MasterDB.Copy()
 	defer dbConn.Close()
@@ -84,8 +84,8 @@ func (t *Transfers) TransferSignature(ctx context.Context, w http.ResponseWriter
 
 	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
 	sigHash, height, blockHash, err := oracle.CreateReceiveSignature(ctx, dbConn, t.Headers,
-		requestData.Contract, requestData.AssetID, requestData.XPubs, requestData.Index, expiration,
-		approved)
+		t.Config.Net, requestData.Contract, requestData.AssetID, requestData.XPubs,
+		requestData.Index, expiration, approved)
 	if err != nil {
 		return translate(errors.Wrap(err, "create signature"))
 	}

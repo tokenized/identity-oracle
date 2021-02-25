@@ -65,6 +65,10 @@ func (o *Oracle) Register(ctx context.Context, w http.ResponseWriter,
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
+	logger.InfoWithFields(ctx, []logger.Field{
+		logger.Stringer("public_key", requestData.PublicKey),
+	}, "Creating user")
+
 	// Verify signature is valid for user's public key
 	s := sha256.New()
 	if err := requestData.Entity.WriteDeterministic(s); err != nil {
@@ -155,10 +159,10 @@ func (o *Oracle) AddXPub(ctx context.Context, w http.ResponseWriter,
 		}
 	}
 
-	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+	logger.InfoWithFields(ctx, []logger.Field{
 		logger.String("user_id", requestData.UserID),
 		logger.Stringer("xpubs", requestData.XPubs),
-	})
+	}, "Adding xpub")
 
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
@@ -167,7 +171,8 @@ func (o *Oracle) AddXPub(ctx context.Context, w http.ResponseWriter,
 	user, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
 	if err != nil {
 		if err == db.ErrNotFound {
-			return web.ErrNotFound // User doesn't exist
+			// User doesn't exist
+			return errors.Wrapf(web.ErrNotFound, "user_id: %s", requestData.UserID)
 		}
 		return translate(errors.Wrap(err, "fetch user"))
 	}
@@ -223,9 +228,9 @@ func (o *Oracle) User(ctx context.Context, w http.ResponseWriter,
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+	logger.InfoWithFields(ctx, []logger.Field{
 		logger.Stringer("xpubs", requestData.XPubs),
-	})
+	}, "Finding user")
 
 	for _, xpub := range requestData.XPubs {
 		if xpub.IsPrivate() {
@@ -240,9 +245,6 @@ func (o *Oracle) User(ctx context.Context, w http.ResponseWriter,
 	// Check user ID
 	userID, err := oracle.FetchUserIDByXPub(ctx, dbConn, requestData.XPubs)
 	if err != nil {
-		if err == oracle.ErrXPubNotFound {
-			return web.ErrNotFound // XPub doesn't exist
-		}
 		return translate(errors.Wrap(err, "fetch user"))
 	}
 
@@ -273,9 +275,9 @@ func (o *Oracle) UpdateIdentity(ctx context.Context, w http.ResponseWriter,
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
-	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+	logger.InfoWithFields(ctx, []logger.Field{
 		logger.String("user_id", requestData.UserID),
-	})
+	}, "Updating identity")
 
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()

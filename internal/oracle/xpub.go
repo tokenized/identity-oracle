@@ -61,7 +61,7 @@ func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpubs bitcoin.ExtendedK
 	result := &XPub{}
 	if err := dbConn.Get(ctx, result, sql, xpubs); err != nil {
 		if errors.Cause(err) == db.ErrNotFound {
-			err = ErrXPubNotFound
+			return nil, errors.Wrap(ErrXPubNotFound, xpubs.String())
 		}
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func FetchUserIDByXPub(ctx context.Context, dbConn *db.DB,
 	var result string
 	if err := dbConn.Get(ctx, &result, sql, xpubs); err != nil {
 		if errors.Cause(err) == db.ErrNotFound {
-			err = ErrXPubNotFound
+			return nil, errors.Wrap(ErrXPubNotFound, xpubs.String())
 		}
 		return nil, err
 	}
