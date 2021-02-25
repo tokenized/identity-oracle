@@ -16,7 +16,8 @@ import (
 func ErrorHandler(next web.Handler) web.Handler {
 
 	// Create the handler that will be attached in the middleware chain.
-	h := func(ctx context.Context, log logger.Logger, w http.ResponseWriter, r *http.Request, params map[string]string) error {
+	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request,
+		params map[string]string) error {
 		ctx, span := trace.StartSpan(ctx, "internal.mid.ErrorHandler")
 		defer span.End()
 
@@ -31,17 +32,17 @@ func ErrorHandler(next web.Handler) web.Handler {
 				v.Error = true
 
 				// Log the panic.
-				log.Printf("%s : ERROR : Panic Caught : %s\n", v.TraceID, r)
+				logger.Error(ctx, "ERROR : Panic Caught : %s", r)
 
 				// Respond with the error.
-				web.RespondError(ctx, log, w, errors.New("unhandled"), http.StatusInternalServerError)
+				web.RespondError(ctx, w, errors.New("unhandled"), http.StatusInternalServerError)
 
 				// Print out the stack.
-				log.Printf("%s : ERROR : Stacktrace\n%s\n", v.TraceID, debug.Stack())
+				logger.Error(ctx, "ERROR : Stacktrace\n%s", debug.Stack())
 			}
 		}()
 
-		if err := next(ctx, log, w, r, params); err != nil {
+		if err := next(ctx, w, r, params); err != nil {
 
 			// Indicate this request had an error.
 			v.Error = true
@@ -50,13 +51,11 @@ func ErrorHandler(next web.Handler) web.Handler {
 			c := errors.Cause(err)
 
 			if c != web.ErrNotFound {
-
-				// Log the error.
-				log.Printf("%s : ERROR : %v\n", v.TraceID, err)
+				logger.Error(ctx, "Error : %s", err)
 			}
 
 			// Respond with the error.
-			web.Error(ctx, log, w, err)
+			web.Error(ctx, w, err)
 
 			// The error has been handled so we can stop propagating it.
 			return nil

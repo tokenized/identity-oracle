@@ -79,7 +79,7 @@ func TestRegister(t *testing.T) {
 		header: http.Header{},
 	}
 
-	err = handler.Register(ctx, test.Log, response, request, params)
+	err = handler.Register(ctx, response, request, params)
 	if err != nil {
 		t.Fatalf("Failed to register : %s", err)
 	}
@@ -209,7 +209,7 @@ func TestAddXPub(t *testing.T) {
 	}
 
 	// Insert XPub
-	err = handler.AddXPub(ctx, test.Log, response, request, params)
+	err = handler.AddXPub(ctx, response, request, params)
 	if err != nil {
 		t.Fatalf("Failed to add xpub : %s", err)
 	}
@@ -315,7 +315,7 @@ func TestUpdateEntity(t *testing.T) {
 	}
 
 	// Update Identity
-	err = handler.UpdateIdentity(ctx, test.Log, response, request, params)
+	err = handler.UpdateIdentity(ctx, response, request, params)
 	if err != nil {
 		t.Fatalf("Failed to update identity : %s", err)
 	}

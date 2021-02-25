@@ -29,7 +29,7 @@ type Verify struct {
 
 // PubKeySignature returns an approve/deny signature for an association between an entity and a
 //   public key.
-func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+func (v *Verify) PubKeySignature(ctx context.Context, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Verify.PubKeySignature")
@@ -46,9 +46,14 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 	}
 
 	if requestData.XPub.IsPrivate() {
-		web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+		web.Respond(ctx, w, "private keys not allowed", http.StatusUnprocessableEntity)
 		return nil
 	}
+
+	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+		logger.Stringer("xpub", requestData.XPub),
+		logger.Uint32("index", requestData.Index),
+	})
 
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
@@ -67,7 +72,7 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 			}{
 				Status: description,
 			}
-			web.Respond(ctx, log, w, response, http.StatusForbidden)
+			web.Respond(ctx, w, response, http.StatusForbidden)
 			return nil
 		}
 	}
@@ -98,13 +103,13 @@ func (v *Verify) PubKeySignature(ctx context.Context, log logger.Logger, w http.
 		BlockHeight:  sigHash.BlockHeight,
 	}
 
-	web.RespondData(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, w, response, http.StatusOK)
 	return nil
 }
 
 // XPubSignature returns an approve/deny signature for an association between an entity and an
 //   extended public key.
-func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+func (v *Verify) XPubSignature(ctx context.Context, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Verify.XPubSignature")
@@ -121,10 +126,14 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 
 	for _, xpub := range requestData.XPubs {
 		if xpub.IsPrivate() {
-			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			web.Respond(ctx, w, "private keys not allowed", http.StatusUnprocessableEntity)
 			return nil
 		}
 	}
+
+	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+		logger.Stringer("xpubs", requestData.XPubs),
+	})
 
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
@@ -143,7 +152,7 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 			}{
 				Status: description,
 			}
-			web.Respond(ctx, log, w, response, http.StatusForbidden)
+			web.Respond(ctx, w, response, http.StatusForbidden)
 			return nil
 		}
 	}
@@ -174,13 +183,13 @@ func (v *Verify) XPubSignature(ctx context.Context, log logger.Logger, w http.Re
 		BlockHeight:  sigHash.BlockHeight,
 	}
 
-	web.RespondData(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, w, response, http.StatusOK)
 	return nil
 }
 
 // AdminCertificate returns a certificate verifying that the contract admin address belongs to the
 // Issuer entity or entity contract address.
-func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+func (v *Verify) AdminCertificate(ctx context.Context, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Verify.AdminCertificate")
@@ -199,10 +208,15 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 
 	for _, xpub := range requestData.XPubs {
 		if xpub.IsPrivate() {
-			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			web.Respond(ctx, w, "private keys not allowed", http.StatusUnprocessableEntity)
 			return nil
 		}
 	}
+
+	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+		logger.Stringer("xpubs", requestData.XPubs),
+		logger.Uint32("index", requestData.Index),
+	})
 
 	dbConn := v.MasterDB.Copy()
 	defer dbConn.Close()
@@ -221,7 +235,7 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 			}{
 				Status: description,
 			}
-			web.Respond(ctx, log, w, response, http.StatusForbidden)
+			web.Respond(ctx, w, response, http.StatusForbidden)
 			return nil
 		}
 	}
@@ -256,6 +270,6 @@ func (v *Verify) AdminCertificate(ctx context.Context, log logger.Logger, w http
 		Expiration:  expiration,
 	}
 
-	web.RespondData(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, w, response, http.StatusOK)
 	return nil
 }

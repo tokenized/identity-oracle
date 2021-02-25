@@ -15,7 +15,6 @@ const KeyValues ctxKey = 1
 
 // Values represent state for each request.
 type Values struct {
-	TraceID    string
 	Now        time.Time
 	StatusCode int
 	Error      bool

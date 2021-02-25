@@ -49,26 +49,26 @@ type JSONErrorMeta struct {
 }
 
 // Error handles all error responses for the API.
-func Error(cxt context.Context, log logger.Logger, w http.ResponseWriter, err error) {
+func Error(cxt context.Context, w http.ResponseWriter, err error) {
 	switch errors.Cause(err) {
 	case ErrNotHealthy:
-		RespondError(cxt, log, w, err, http.StatusInternalServerError)
+		RespondError(cxt, w, err, http.StatusInternalServerError)
 		return
 
 	case ErrNotFound:
-		RespondError(cxt, log, w, err, http.StatusNotFound)
+		RespondError(cxt, w, err, http.StatusNotFound)
 		return
 
 	case ErrValidation, ErrInvalidID:
-		RespondError(cxt, log, w, err, http.StatusBadRequest)
+		RespondError(cxt, w, err, http.StatusBadRequest)
 		return
 
 	case ErrUnauthorized:
-		RespondError(cxt, log, w, err, http.StatusUnauthorized)
+		RespondError(cxt, w, err, http.StatusUnauthorized)
 		return
 
 	case ErrForbidden:
-		RespondError(cxt, log, w, err, http.StatusForbidden)
+		RespondError(cxt, w, err, http.StatusForbidden)
 		return
 	}
 
@@ -83,29 +83,27 @@ func Error(cxt context.Context, log logger.Logger, w http.ResponseWriter, err er
 			}},
 		}
 
-		Respond(cxt, log, w, v, http.StatusUnprocessableEntity)
+		Respond(cxt, w, v, http.StatusUnprocessableEntity)
 		return
 	}
 
-	RespondError(cxt, log, w, err, http.StatusInternalServerError)
+	RespondError(cxt, w, err, http.StatusInternalServerError)
 }
 
 // RespondError sends JSON describing the error
-func RespondError(ctx context.Context, log logger.Logger, w http.ResponseWriter, err error,
-	code int) {
+func RespondError(ctx context.Context, w http.ResponseWriter, err error, code int) {
 	v := JSONErrors{
 		Errors: []JSONError{{
 			Detail: err.Error(),
 		}},
 	}
 
-	Respond(ctx, log, w, v, code)
+	Respond(ctx, w, v, code)
 }
 
 // Respond sends JSON to the client.
 // If code is StatusNoContent, v is expected to be nil.
-func Respond(ctx context.Context, log logger.Logger, w http.ResponseWriter, data interface{},
-	code int) {
+func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, code int) {
 
 	// Set the status code for the request logger middleware.
 	v := ctx.Value(KeyValues).(*Values)
@@ -121,14 +119,14 @@ func Respond(ctx context.Context, log logger.Logger, w http.ResponseWriter, data
 	// Marshal the data into a JSON string.
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		log.Printf("%s : Respond %v Marshalling JSON response\n", v.TraceID, err)
+		logger.Error(ctx, "Failed to marshal json response : %s", err)
 
 		// Should respond with internal server error.
-		RespondError(ctx, log, w, err, http.StatusInternalServerError)
+		RespondError(ctx, w, err, http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Response : \n%s\n", jsonData)
+	logger.Info(ctx, "Response : \n%s", jsonData)
 
 	// Set the content type and headers once we know marshaling has succeeded.
 	w.Header().Set("Content-Type", "application/json")
@@ -141,15 +139,15 @@ func Respond(ctx context.Context, log logger.Logger, w http.ResponseWriter, data
 }
 
 // Respond with a location set
-func RespondRedirect(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+func RespondRedirect(ctx context.Context, w http.ResponseWriter,
 	data interface{}, location string, code int) {
 	w.Header().Set("Location", location)
 
-	Respond(ctx, log, w, data, code)
+	Respond(ctx, w, data, code)
 }
 
 // Respond using a standard RESTful response against the JSON API spec.
-func RespondData(ctx context.Context, log logger.Logger, w http.ResponseWriter, data interface{},
+func RespondData(ctx context.Context, w http.ResponseWriter, data interface{},
 	code int) {
 	rData := struct {
 		Data interface{} `json:"data"`
@@ -157,11 +155,11 @@ func RespondData(ctx context.Context, log logger.Logger, w http.ResponseWriter, 
 		Data: data,
 	}
 
-	Respond(ctx, log, w, rData, code)
+	Respond(ctx, w, rData, code)
 }
 
 // Respond with plaintext such as HTML
-func RespondHTML(ctx context.Context, log logger.Logger, w http.ResponseWriter, content string,
+func RespondHTML(ctx context.Context, w http.ResponseWriter, content string,
 	code int) {
 
 	// Set the status code for the request logger middleware.

@@ -9,7 +9,6 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 	"github.com/tokenized/pkg/bitcoin"
-	"github.com/tokenized/pkg/logger"
 )
 
 // API returns a handler for a set of routes.
@@ -18,9 +17,7 @@ func API(ctx context.Context, config *web.Config, masterDB *db.DB, key bitcoin.K
 	transferExpirationDurationSeconds, identityExpirationDurationSeconds int,
 	approver oracle.ApproverInterface) http.Handler {
 
-	log := logger.NewLoggerObject(ctx)
-
-	app := web.New(config, log, mid.RequestLogger, mid.Metrics, mid.ErrorHandler, mid.CORS)
+	app := web.New(config, mid.ErrorHandler, mid.CORS)
 
 	// Register OPTIONS fallback handler for preflight requests.
 	app.HandleOptions(mid.CORSHandler)

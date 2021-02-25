@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-	"github.com/tokenized/pkg/logger"
 
 	"go.opencensus.io/trace"
 )
@@ -14,13 +13,15 @@ import (
 func CORS(next web.Handler) web.Handler {
 
 	// Wrap this handler around the next one provided.
-	h := func(ctx context.Context, log logger.Logger, w http.ResponseWriter, r *http.Request, params map[string]string) error {
+	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request,
+		params map[string]string) error {
+
 		ctx, span := trace.StartSpan(ctx, "internal.mid.CORS")
 		defer span.End()
 
 		CORSHandler(w, r, params)
 
-		err := next(ctx, log, w, r, params)
+		err := next(ctx, w, r, params)
 
 		// For consistency return the error we received.
 		return err

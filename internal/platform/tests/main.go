@@ -2,8 +2,6 @@ package tests
 
 import (
 	"context"
-	"log"
-	"os"
 	"time"
 
 	"github.com/tokenized/config"
@@ -11,8 +9,6 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 	"github.com/tokenized/pkg/bitcoin"
 	"github.com/tokenized/pkg/logger"
-
-	"github.com/google/uuid"
 )
 
 // Success and failure markers.
@@ -23,7 +19,6 @@ const (
 
 // Test owns state for running/shutting down tests.
 type Test struct {
-	Log       *log.Logger
 	MasterDB  *db.DB
 	WebConfig *web.Config
 }
@@ -31,15 +26,10 @@ type Test struct {
 // New is the entry point for tests.
 func New() *Test {
 
-	// =========================================================================
-	// Logging
-
-	log := log.New(os.Stdout, "TEST : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
-
 	// ============================================================
 	// Configuration
 
-	ctx := context.Background()
+	ctx := logger.ContextWithLogger(context.Background(), false, false, "")
 
 	cfg := &Config{}
 	// load config using sane fallbacks
@@ -55,7 +45,7 @@ func New() *Test {
 		URL:    cfg.Db.URL,
 	}, nil)
 	if err != nil {
-		log.Fatalf("main : Register DB : %v", err)
+		logger.Fatal(ctx, "main : Register DB : %v", err)
 	}
 
 	mockStorage := newMockStorage()
@@ -70,7 +60,7 @@ func New() *Test {
 		IsTest:  true,
 	}
 
-	return &Test{log, masterDB, webConfig}
+	return &Test{masterDB, webConfig}
 }
 
 // TearDown is used for shutting down tests. Calling this should be
@@ -82,8 +72,7 @@ func (t *Test) TearDown() {
 // Context returns an app level context for testing.
 func Context() context.Context {
 	values := web.Values{
-		TraceID: uuid.New().String(),
-		Now:     time.Now(),
+		Now: time.Now(),
 	}
 
 	ctx := context.WithValue(context.Background(), web.KeyValues, &values)

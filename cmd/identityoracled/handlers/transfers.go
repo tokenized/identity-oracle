@@ -27,7 +27,7 @@ type Transfers struct {
 }
 
 // TransferSignature returns an approve/deny signature for a transfer receiver.
-func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+func (t *Transfers) TransferSignature(ctx context.Context, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Transfers.TransferSignature")
@@ -46,10 +46,15 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 
 	for _, xpub := range requestData.XPubs {
 		if xpub.IsPrivate() {
-			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			web.Respond(ctx, w, "private keys not allowed", http.StatusUnprocessableEntity)
 			return nil
 		}
 	}
+
+	ctx = logger.ContextWithLogFields(ctx, []logger.Field{
+		logger.Stringer("xpubs", requestData.XPubs),
+		logger.Uint32("index", requestData.Index),
+	})
 
 	dbConn := t.MasterDB.Copy()
 	defer dbConn.Close()
@@ -57,7 +62,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	user, err := oracle.FetchUserByXPub(ctx, dbConn, requestData.XPubs)
 	if err != nil {
 		if errors.Cause(err) == oracle.ErrXPubNotFound {
-			web.RespondError(ctx, log, w, err, http.StatusNotFound)
+			web.RespondError(ctx, w, err, http.StatusNotFound)
 			return nil
 		}
 		return translate(errors.Wrap(err, "fetch user"))
@@ -108,6 +113,6 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		Expiration:   expiration,
 	}
 
-	web.RespondData(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, w, response, http.StatusOK)
 	return nil
 }

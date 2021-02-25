@@ -89,7 +89,7 @@ func main() {
 
 	spyNodeErrors := make(chan error, 1)
 
-	server, err := bootstrap.Setup(ctx, &cfg.Oracle, spyNode, nil)
+	server, err := bootstrap.Setup(ctx, logConfig, &cfg.Oracle, spyNode, nil)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to setup server : %s", err)
 	}
