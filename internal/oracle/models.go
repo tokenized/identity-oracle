@@ -3,13 +3,15 @@ package oracle
 import (
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/tokenized/pkg/bitcoin"
+
+	"github.com/pkg/errors"
 )
 
 var (
-	ErrXPubNotFound = errors.New("Extended Public Key Not Found")
-	ErrUserNotFound = errors.New("User Not Found")
+	ErrXPubNotFound     = errors.New("Extended Public Key Not Found")
+	ErrUserNotFound     = errors.New("User Not Found")
+	ErrInvalidSignature = errors.New("Invalid Signature")
 )
 
 type User struct {

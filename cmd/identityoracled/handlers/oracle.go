@@ -77,8 +77,7 @@ func (o *Oracle) Register(ctx context.Context, w http.ResponseWriter,
 	hash := sha256.Sum256(s.Sum(nil))
 
 	if !requestData.Signature.Verify(hash[:], requestData.PublicKey) {
-		web.Respond(ctx, w, nil, http.StatusUnauthorized)
-		return nil
+		return translate(oracle.ErrInvalidSignature)
 	}
 
 	entityBytes, err := proto.Marshal(&requestData.Entity)
@@ -188,7 +187,7 @@ func (o *Oracle) AddXPub(ctx context.Context, w http.ResponseWriter,
 	hash := sha256.Sum256(s.Sum(nil))
 
 	if !requestData.Signature.Verify(hash[:], user.PublicKey) {
-		return translate(errors.Wrap(err, "validate sig"))
+		return translate(oracle.ErrInvalidSignature)
 	}
 
 	xpub := &oracle.XPub{
@@ -302,8 +301,7 @@ func (o *Oracle) UpdateIdentity(ctx context.Context, w http.ResponseWriter,
 	hash := sha256.Sum256(s.Sum(nil))
 
 	if !requestData.Signature.Verify(hash[:], user.PublicKey) {
-		web.Respond(ctx, w, nil, http.StatusUnauthorized)
-		return nil
+		return translate(oracle.ErrInvalidSignature)
 	}
 
 	if o.Approver != nil {

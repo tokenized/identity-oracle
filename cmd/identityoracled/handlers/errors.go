@@ -16,6 +16,8 @@ func translate(err error) error {
 		return errors.Wrap(web.ErrNotFound, err.Error())
 	case oracle.ErrUserNotFound:
 		return errors.Wrap(web.ErrNotFound, err.Error())
+	case oracle.ErrInvalidSignature:
+		return errors.Wrap(web.ErrUnauthorized, err.Error())
 	}
 	return err
 }

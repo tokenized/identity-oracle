@@ -232,7 +232,6 @@ func TestAddXPub(t *testing.T) {
 }
 
 func TestAddXPubNoUser(t *testing.T) {
-	// ctx := tests.Context()
 	test := tests.New()
 
 	oracleKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
@@ -305,6 +304,113 @@ func TestAddXPubNoUser(t *testing.T) {
 	webHandler.ServeHTTP(rr, request)
 
 	if rr.Code != http.StatusNotFound {
+		t.Errorf("got %v want %v with body %s", rr.Code, http.StatusNotFound, rr.Body.Bytes())
+	}
+}
+
+func TestAddXPubBadSignature(t *testing.T) {
+	ctx := tests.Context()
+	test := tests.New()
+
+	oracleKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate oracle key : %s", err)
+	}
+	handler := &Oracle{
+		Config:   test.WebConfig,
+		MasterDB: test.MasterDB,
+		Key:      oracleKey,
+	}
+
+	key, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate user key : %s", err)
+	}
+
+	entity := actions.EntityField{
+		Name:        "Test Entity Name",
+		CountryCode: "AUS",
+	}
+
+	entityBytes, err := proto.Marshal(&entity)
+	if err != nil {
+		t.Fatalf("Failed to serialize user entity : %s", err)
+	}
+
+	userID := uuid.New()
+
+	user := &oracle.User{
+		ID:           userID.String(),
+		Entity:       entityBytes,
+		PublicKey:    key.PublicKey(),
+		DateCreated:  time.Now(),
+		DateModified: time.Now(),
+		IsDeleted:    false,
+	}
+
+	if err := oracle.CreateUser(ctx, test.MasterDB, user); err != nil {
+		t.Fatalf("Failed to create user : %s", err)
+	}
+
+	xkey, err := bitcoin.GenerateMasterExtendedKey()
+	if err != nil {
+		t.Fatalf("Failed to generate xkey : %s", err)
+	}
+
+	xkeys := bitcoin.ExtendedKeys{xkey}
+
+	requestData := struct {
+		UserID          string               `json:"user_id" validate:"required"`
+		XPubs           bitcoin.ExtendedKeys `json:"xpubs" validate:"required"` // hex
+		RequiredSigners int                  `json:"required_signers" validate:"required"`
+		Signature       bitcoin.Signature    `json:"signature" validate:"required"` // hex signature of user id and xpub with users public key
+	}{
+		UserID:          userID.String(),
+		XPubs:           xkeys.ExtendedPublicKeys(),
+		RequiredSigners: 1,
+	}
+
+	s := sha256.New()
+	s.Write(userID[:])
+	s.Write(requestData.XPubs.Bytes())
+	if err := binary.Write(s, binary.LittleEndian, uint32(requestData.RequiredSigners)); err != nil {
+		t.Fatalf("Failed to hash required signers : %s", err)
+	}
+	hash := sha256.Sum256(s.Sum(nil))
+
+	// Sign with wrong key
+	otherKey, err := bitcoin.GenerateKey(bitcoin.MainNet)
+	if err != nil {
+		t.Fatalf("Failed to generate user key : %s", err)
+	}
+
+	requestData.Signature, err = otherKey.Sign(hash[:])
+	if err != nil {
+		t.Fatalf("Failed to generate signature : %s", err)
+	}
+
+	b, err := json.Marshal(&requestData)
+	if err != nil {
+		t.Fatalf("Failed to serialize request data : %s", err)
+	}
+	requestBuf := bytes.NewBuffer(b)
+	request, err := http.NewRequest("POST", "/oracle/addXPub", requestBuf)
+	if err != nil {
+		t.Fatalf("Failed to create request : %s", err)
+	}
+
+	app := web.New(test.WebConfig, mid.ErrorHandler, mid.CORS)
+	app.Handle("POST", "/oracle/addXPub", handler.AddXPub)
+
+	requestLogger := mid.NewRequestLoggingMiddleware(logger.NewConfig(false, false, ""))
+	webHandler := requestLogger.Handler(app)
+
+	// create a ResponseRecorder to record the response.
+	rr := httptest.NewRecorder()
+
+	webHandler.ServeHTTP(rr, request)
+
+	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("got %v want %v with body %s", rr.Code, http.StatusNotFound, rr.Body.Bytes())
 	}
 }
