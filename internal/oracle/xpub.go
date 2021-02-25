@@ -20,10 +20,6 @@ const (
 	`
 )
 
-var (
-	ErrXPubNotFound = errors.New("Extended Public Key Not Found")
-)
-
 // CreateXPub inserts an extended public key into the database.
 func CreateXPub(ctx context.Context, dbConn *db.DB, xpub *XPub) error {
 	sql := `INSERT
@@ -51,7 +47,9 @@ func CreateXPub(ctx context.Context, dbConn *db.DB, xpub *XPub) error {
 	return nil
 }
 
-func FetchXPubByXPub(ctx context.Context, dbConn *db.DB, xpubs bitcoin.ExtendedKeys) (*XPub, error) {
+func FetchXPubByXPub(ctx context.Context, dbConn *db.DB,
+	xpubs bitcoin.ExtendedKeys) (*XPub, error) {
+
 	sql := `SELECT ` + XPubColumns + `
 		FROM
 			xpubs xp

@@ -61,10 +61,6 @@ func (t *Transfers) TransferSignature(ctx context.Context, w http.ResponseWriter
 
 	user, err := oracle.FetchUserByXPub(ctx, dbConn, requestData.XPubs)
 	if err != nil {
-		if errors.Cause(err) == oracle.ErrXPubNotFound {
-			web.RespondError(ctx, w, err, http.StatusNotFound)
-			return nil
-		}
 		return translate(errors.Wrap(err, "fetch user"))
 	}
 

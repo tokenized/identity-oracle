@@ -170,10 +170,6 @@ func (o *Oracle) AddXPub(ctx context.Context, w http.ResponseWriter,
 	// Fetch User
 	user, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
 	if err != nil {
-		if err == db.ErrNotFound {
-			// User doesn't exist
-			return errors.Wrapf(web.ErrNotFound, "user_id: %s", requestData.UserID)
-		}
 		return translate(errors.Wrap(err, "fetch user"))
 	}
 

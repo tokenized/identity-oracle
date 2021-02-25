@@ -38,11 +38,6 @@ type JSONError struct {
 	Meta   *JSONErrorMeta `json:"meta,omitempty"`
 }
 
-// JSONErrors is an error response object
-type JSONErrors struct {
-	Errors []JSONError `json:"errors,omitempty"`
-}
-
 // JSONErrorMeta is a struct of known meta data
 type JSONErrorMeta struct {
 	Fields InvalidError `json:"fields,omitempty"`
@@ -76,13 +71,11 @@ func Error(ctx context.Context, w http.ResponseWriter, err error) {
 
 	switch e := errors.Cause(err).(type) {
 	case InvalidError:
-		v := JSONErrors{
-			Errors: []JSONError{{
-				Detail: "Field validation errors occurred",
-				Meta: &JSONErrorMeta{
-					Fields: e,
-				},
-			}},
+		v := JSONError{
+			Detail: "Field validation errors occurred",
+			Meta: &JSONErrorMeta{
+				Fields: e,
+			},
 		}
 
 		Respond(ctx, w, v, http.StatusUnprocessableEntity)
@@ -94,10 +87,8 @@ func Error(ctx context.Context, w http.ResponseWriter, err error) {
 
 // RespondError sends JSON describing the error
 func RespondError(ctx context.Context, w http.ResponseWriter, err error, code int) {
-	v := JSONErrors{
-		Errors: []JSONError{{
-			Detail: err.Error(),
-		}},
+	v := JSONError{
+		Detail: err.Error(),
 	}
 
 	Respond(ctx, w, v, code)

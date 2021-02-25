@@ -59,6 +59,9 @@ func FetchUser(ctx context.Context, dbConn *db.DB, id string) (*User, error) {
 
 	user := &User{}
 	if err := dbConn.Get(ctx, user, sql, id); err != nil {
+		if errors.Cause(err) == db.ErrNotFound {
+			return nil, errors.Wrap(ErrUserNotFound, id)
+		}
 		return nil, err
 	}
 	return user, nil

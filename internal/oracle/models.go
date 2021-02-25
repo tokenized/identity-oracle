@@ -3,7 +3,13 @@ package oracle
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tokenized/pkg/bitcoin"
+)
+
+var (
+	ErrXPubNotFound = errors.New("Extended Public Key Not Found")
+	ErrUserNotFound = errors.New("User Not Found")
 )
 
 type User struct {
