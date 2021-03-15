@@ -23,20 +23,7 @@ import (
 	"github.com/tokenized/smart-contract/pkg/contracts"
 )
 
-func Run(approver oracle.ApproverInterface) {
-
-	// ---------------------------------------------------------------------------------------------
-	// Logging
-
-	logPath := os.Getenv("LOG_FILE_PATH")
-
-	logConfig := logger.NewConfig(strings.ToUpper(os.Getenv("DEVELOPMENT")) == "TRUE",
-		strings.ToUpper(os.Getenv("LOG_FORMAT")) == "TEXT", logPath)
-
-	logConfig.EnableSubSystem(rpcnode.SubSystem)
-	logConfig.EnableSubSystem(spynode.SubSystem)
-
-	ctx := logger.ContextWithLogConfig(context.Background(), logConfig)
+func Run(ctx context.Context, approver oracle.ApproverInterface) {
 
 	log := logger.NewLoggerObject(ctx)
 
