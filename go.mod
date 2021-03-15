@@ -10,7 +10,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/tokenized/pkg v0.2.2-0.20201111054127-112ff29d87ee
+	github.com/tokenized/pkg v0.2.3-0.20210315003228-7d83f3f9a1da
 	github.com/tokenized/smart-contract v0.4.1-0.20201118054112-7219f178719d
 	github.com/tokenized/specification v0.3.1-0.20201118053550-a7639e9a8fa9
 	go.opencensus.io v0.22.2
