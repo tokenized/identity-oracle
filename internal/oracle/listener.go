@@ -100,13 +100,13 @@ func (l *Listener) HandleTx(ctx context.Context, tx *client.Tx) {
 	}
 
 	// Address of first input
-	ra, err := bitcoin.RawAddressFromLockingScript(tx.Outputs[0].PkScript)
+	ra, err := bitcoin.RawAddressFromLockingScript(tx.Outputs[0].LockingScript)
 	if err != nil || ra.IsEmpty() {
 		return
 	}
 
 	for _, output := range tx.Tx.TxOut {
-		action, err := protocol.Deserialize(output.PkScript, l.isTest)
+		action, err := protocol.Deserialize(output.LockingScript, l.isTest)
 		if err != nil {
 			continue
 		}
@@ -116,7 +116,7 @@ func (l *Listener) HandleTx(ctx context.Context, tx *client.Tx) {
 			continue
 		}
 
-		if err := l.SaveContractFormation(ctx, ra, formation, output.PkScript); err != nil {
+		if err := l.SaveContractFormation(ctx, ra, formation, output.LockingScript); err != nil {
 			logger.Error(ctx, "Failed to save contract formation : %s", err)
 		}
 	}

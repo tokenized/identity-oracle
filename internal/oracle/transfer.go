@@ -19,7 +19,7 @@ import (
 //   bool - true if transfer is approved
 func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, headers Headers,
 	net bitcoin.Network, contract, asset string, xpubs bitcoin.ExtendedKeys, index uint32,
-	expiration uint64, approved bool) ([]byte, uint32, bitcoin.Hash32, error) {
+	expiration uint64, approved bool) (*bitcoin.Hash32, uint32, bitcoin.Hash32, error) {
 
 	_, assetCode, err := protocol.DecodeAssetID(asset)
 	if err != nil {
@@ -76,12 +76,7 @@ func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, headers Headers,
 		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate signature")
 	}
 
-	hashObject, err := bitcoin.NewHash32(sigHash)
-	if err == nil {
-		fields = append(fields, logger.Stringer("sig_hash", hashObject))
-	} else {
-		fields = append(fields, logger.String("sig_hash", "invalid"))
-	}
+	fields = append(fields, logger.Stringer("sig_hash", sigHash))
 
 	logger.InfoWithFields(ctx, fields, "Transfer certificate")
 

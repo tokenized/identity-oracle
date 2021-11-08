@@ -27,7 +27,7 @@ type Config struct {
 	}
 	Db struct {
 		Driver string `default:"postgres" envconfig:"DB_DRIVER" json:"DB_DRIVER"`
-		URL    string `default:"user=foo dbname=bar sslmode=disable" envconfig:"DB_URL" json:"DB_URL"`
+		URL    string `default:"user=foo dbname=bar sslmode=disable" envconfig:"DB_URL" json:"DB_URL" masked:"true"`
 	}
 	Storage struct {
 		Region    string `default:"ap-southeast-2" envconfig:"STORAGE_REGION" json:"STORAGE_REGION"`

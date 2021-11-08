@@ -30,8 +30,8 @@ type Oracle struct {
 }
 
 // Identity returns identity information about the oracle.
-func (o *Oracle) Identity(ctx context.Context, w http.ResponseWriter,
-	r *http.Request, params map[string]string) error {
+func (o *Oracle) Identity(ctx context.Context, w http.ResponseWriter, r *http.Request,
+	params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.Identity")
 	defer span.End()
@@ -49,8 +49,8 @@ func (o *Oracle) Identity(ctx context.Context, w http.ResponseWriter,
 }
 
 // Register adds a new user to the system
-func (o *Oracle) Register(ctx context.Context, w http.ResponseWriter,
-	r *http.Request, params map[string]string) error {
+func (o *Oracle) Register(ctx context.Context, w http.ResponseWriter, r *http.Request,
+	params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.Register")
 	defer span.End()
@@ -76,7 +76,7 @@ func (o *Oracle) Register(ctx context.Context, w http.ResponseWriter,
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	if !requestData.Signature.Verify(hash[:], requestData.PublicKey) {
+	if !requestData.Signature.Verify(hash, requestData.PublicKey) {
 		return translate(oracle.ErrInvalidSignature)
 	}
 
@@ -134,8 +134,8 @@ func (o *Oracle) Register(ctx context.Context, w http.ResponseWriter,
 }
 
 // AddXPub adds a new xpub to the system.
-func (o *Oracle) AddXPub(ctx context.Context, w http.ResponseWriter,
-	r *http.Request, params map[string]string) error {
+func (o *Oracle) AddXPub(ctx context.Context, w http.ResponseWriter, r *http.Request,
+	params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.AddXPub")
 	defer span.End()
@@ -186,7 +186,7 @@ func (o *Oracle) AddXPub(ctx context.Context, w http.ResponseWriter,
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	if !requestData.Signature.Verify(hash[:], user.PublicKey) {
+	if !requestData.Signature.Verify(hash, user.PublicKey) {
 		return translate(oracle.ErrInvalidSignature)
 	}
 
@@ -300,7 +300,7 @@ func (o *Oracle) UpdateIdentity(ctx context.Context, w http.ResponseWriter,
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	if !requestData.Signature.Verify(hash[:], user.PublicKey) {
+	if !requestData.Signature.Verify(hash, user.PublicKey) {
 		return translate(oracle.ErrInvalidSignature)
 	}
 

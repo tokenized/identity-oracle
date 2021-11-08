@@ -45,8 +45,6 @@ type JSONErrorMeta struct {
 
 // Error handles all error responses for the API.
 func Error(ctx context.Context, w http.ResponseWriter, err error) {
-	logger.Info(ctx, "Responding to error : %s", err)
-
 	switch errors.Cause(err) {
 	case ErrNotHealthy:
 		RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -82,6 +80,7 @@ func Error(ctx context.Context, w http.ResponseWriter, err error) {
 		return
 	}
 
+	logger.Error(ctx, "Responding to error : %s", err)
 	RespondError(ctx, w, err, http.StatusInternalServerError)
 }
 

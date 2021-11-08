@@ -86,7 +86,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, w http.ResponseWriter
 		return translate(errors.Wrap(err, "create signature"))
 	}
 
-	sig, err := t.Key.Sign(sigHash[:])
+	sig, err := t.Key.Sign(*sigHash)
 	if err != nil {
 		return translate(errors.Wrap(err, "sign"))
 	}

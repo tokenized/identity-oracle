@@ -51,7 +51,7 @@ func VerifyPubKey(ctx context.Context, user *User, headers Headers,
 	}
 
 	return &SignatureHash{
-		Hash:        hash,
+		Hash:        *hash,
 		BlockHeight: height,
 		Approved:    approved,
 		Description: description,
@@ -88,7 +88,7 @@ func VerifyXPub(ctx context.Context, user *User, headers Headers,
 	}
 
 	return &SignatureHash{
-		Hash:        hash,
+		Hash:        *hash,
 		BlockHeight: height,
 		Approved:    approved,
 		Description: description,
@@ -176,17 +176,12 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net 
 		return nil, errors.Wrap(err, "generate sig hash")
 	}
 
-	hashObject, err := bitcoin.NewHash32(hash)
-	if err == nil {
-		fields = append(fields, logger.Stringer("sig_hash", hashObject))
-	} else {
-		fields = append(fields, logger.String("sig_hash", "invalid"))
-	}
+	fields = append(fields, logger.Stringer("sig_hash", hash))
 
 	logger.InfoWithFields(ctx, fields, "Admin certificate")
 
 	return &SignatureHash{
-		Hash:        hash,
+		Hash:        *hash,
 		BlockHeight: height,
 		Approved:    approved,
 		Description: description,

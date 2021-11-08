@@ -34,7 +34,7 @@ type XPub struct {
 // SignatureHash is a simple struct for wrapping the common values returned from a function that
 // calculates a signature hash.
 type SignatureHash struct {
-	Hash        []byte
+	Hash        bitcoin.Hash32
 	BlockHeight uint32
 	Approved    bool
 	Description string

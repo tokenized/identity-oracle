@@ -61,7 +61,7 @@ func TestRegister(t *testing.T) {
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	requestData.Signature, err = key.Sign(hash[:])
+	requestData.Signature, err = key.Sign(hash)
 	if err != nil {
 		t.Fatalf("Failed to sign entity : %s", err)
 	}
@@ -190,7 +190,7 @@ func TestAddXPub(t *testing.T) {
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	requestData.Signature, err = key.Sign(hash[:])
+	requestData.Signature, err = key.Sign(hash)
 	if err != nil {
 		t.Fatalf("Failed to generate signature : %s", err)
 	}
@@ -277,7 +277,7 @@ func TestAddXPubNoUser(t *testing.T) {
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	requestData.Signature, err = key.Sign(hash[:])
+	requestData.Signature, err = key.Sign(hash)
 	if err != nil {
 		t.Fatalf("Failed to generate signature : %s", err)
 	}
@@ -384,7 +384,7 @@ func TestAddXPubBadSignature(t *testing.T) {
 		t.Fatalf("Failed to generate user key : %s", err)
 	}
 
-	requestData.Signature, err = otherKey.Sign(hash[:])
+	requestData.Signature, err = otherKey.Sign(hash)
 	if err != nil {
 		t.Fatalf("Failed to generate signature : %s", err)
 	}
@@ -480,7 +480,7 @@ func TestUpdateEntity(t *testing.T) {
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	requestData.Signature, err = key.Sign(hash[:])
+	requestData.Signature, err = key.Sign(hash)
 	if err != nil {
 		t.Fatalf("Failed to generate signature : %s", err)
 	}

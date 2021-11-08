@@ -84,7 +84,7 @@ func (v *Verify) PubKeySignature(ctx context.Context, w http.ResponseWriter,
 		return translate(errors.Wrap(err, "verify pub key"))
 	}
 
-	sig, err := v.Key.Sign(sigHash.Hash[:])
+	sig, err := v.Key.Sign(sigHash.Hash)
 	if err != nil {
 		return translate(errors.Wrap(err, "sign"))
 	}
@@ -164,7 +164,7 @@ func (v *Verify) XPubSignature(ctx context.Context, w http.ResponseWriter,
 		return translate(errors.Wrap(err, "verify xpub"))
 	}
 
-	sig, err := v.Key.Sign(sigHash.Hash[:])
+	sig, err := v.Key.Sign(sigHash.Hash)
 	if err != nil {
 		return translate(errors.Wrap(err, "sign"))
 	}
@@ -251,7 +251,7 @@ func (v *Verify) AdminCertificate(ctx context.Context, w http.ResponseWriter,
 		return translate(errors.Wrap(err, "verify admin"))
 	}
 
-	sig, err := v.Key.Sign(sigHash.Hash[:])
+	sig, err := v.Key.Sign(sigHash.Hash)
 	if err != nil {
 		return translate(errors.Wrap(err, "sign"))
 	}

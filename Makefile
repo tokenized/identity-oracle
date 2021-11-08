@@ -53,3 +53,7 @@ tools:
 	[ -f $(GOPATH)/bin/goimports ] || go get golang.org/x/tools/cmd/goimports
 	[ -f $(GOPATH)/bin/golint ] || go get github.com/golang/lint/golint
 	[ -f $(GOPATH)/bin/goose ] || go get github.com/pressly/goose/cmd/goose
+
+clean:
+	rm -rf dist
+	go clean -testcache
