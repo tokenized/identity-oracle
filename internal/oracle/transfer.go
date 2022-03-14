@@ -18,15 +18,15 @@ import (
 //   bitcoin.Hash32 - block hash included in signature hash
 //   bool - true if transfer is approved
 func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, headers Headers,
-	net bitcoin.Network, contract, asset string, xpubs bitcoin.ExtendedKeys, index uint32,
+	net bitcoin.Network, contract, instrument string, xpubs bitcoin.ExtendedKeys, index uint32,
 	expiration uint64, approved bool) (*bitcoin.Hash32, uint32, bitcoin.Hash32, error) {
 
-	_, assetCode, err := protocol.DecodeAssetID(asset)
+	_, instrumentCode, err := protocol.DecodeInstrumentID(instrument)
 	if err != nil {
-		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "decode asset id")
+		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "decode instrument id")
 	}
 
-	// TODO Get contract and asset
+	// TODO Get contract and instrument
 
 	xpubData, err := FetchXPubByXPub(ctx, dbConn, xpubs)
 	if err != nil {
@@ -70,7 +70,7 @@ func CreateReceiveSignature(ctx context.Context, dbConn *db.DB, headers Headers,
 	fields = append(fields, logger.Stringer("receive_address",
 		bitcoin.NewAddressFromRawAddress(receiveAddress, net)))
 
-	sigHash, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, assetCode.Bytes(),
+	sigHash, err := protocol.TransferOracleSigHash(ctx, contractRawAddress, instrumentCode.Bytes(),
 		receiveAddress, *blockHash, expiration, approveValue)
 	if err != nil {
 		return nil, 0, bitcoin.Hash32{}, errors.Wrap(err, "generate signature")

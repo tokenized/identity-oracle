@@ -34,10 +34,10 @@ func (t *Transfers) TransferSignature(ctx context.Context, w http.ResponseWriter
 	defer span.End()
 
 	var requestData struct {
-		XPubs    bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
-		Index    uint32               `json:"index"`
-		Contract string               `json:"contract" validate:"required"`
-		AssetID  string               `json:"asset_id" validate:"required"`
+		XPubs        bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
+		Index        uint32               `json:"index"`
+		Contract     string               `json:"contract" validate:"required"`
+		InstrumentID string               `json:"instrument_id" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
@@ -69,7 +69,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, w http.ResponseWriter
 	if t.Approver != nil {
 		var approveErr error
 		approved, description, approveErr = t.Approver.ApproveTransfer(ctx, requestData.Contract,
-			requestData.AssetID, user.ID)
+			requestData.InstrumentID, user.ID)
 		if approveErr != nil {
 			return translate(errors.Wrap(err, "approve transfer"))
 		}
@@ -78,9 +78,9 @@ func (t *Transfers) TransferSignature(ctx context.Context, w http.ResponseWriter
 	expiration := uint64(time.Now().Add(time.Duration(t.TransferExpirationDurationSeconds) *
 		time.Second).UnixNano())
 
-	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
+	// Check that xpub is in DB. Check that entity associated xpub meets criteria for instrument.
 	sigHash, height, blockHash, err := oracle.CreateReceiveSignature(ctx, dbConn, t.Headers,
-		t.Config.Net, requestData.Contract, requestData.AssetID, requestData.XPubs,
+		t.Config.Net, requestData.Contract, requestData.InstrumentID, requestData.XPubs,
 		requestData.Index, expiration, approved)
 	if err != nil {
 		return translate(errors.Wrap(err, "create signature"))

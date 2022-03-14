@@ -29,7 +29,7 @@ func TestNewHeader(t *testing.T) {
 			Version:    1,
 			PrevBlock:  prevHash,
 			MerkleRoot: merkleRoot,
-			Timestamp:  time.Now(),
+			Timestamp:  uint32(time.Now().Unix()),
 			Bits:       rand.Uint32(),
 			Nonce:      rand.Uint32(),
 		}
