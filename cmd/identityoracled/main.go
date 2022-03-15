@@ -80,7 +80,7 @@ func main() {
 	spyConfig, err := spynodeBootstrap.NewConfig(net, cfg.Bitcoin.IsTest,
 		cfg.SpyNode.Address, cfg.SpyNode.UserAgent, cfg.SpyNode.StartHash,
 		cfg.SpyNode.UntrustedNodes, cfg.SpyNode.SafeTxDelay, cfg.SpyNode.ShotgunCount,
-		cfg.SpyNode.MaxRetries, cfg.SpyNode.RetryDelay)
+		cfg.SpyNode.MaxRetries, cfg.SpyNode.RetryDelay, cfg.SpyNode.RequestMempool)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to create spynode config : %s", err)
 	}
@@ -89,7 +89,7 @@ func main() {
 
 	spyNodeErrors := make(chan error, 1)
 
-	server, err := bootstrap.Setup(ctx, &cfg.Oracle, spyNode, nil)
+	server, err := bootstrap.Setup(ctx, logConfig, &cfg.Oracle, spyNode, nil)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to setup server : %s", err)
 	}
@@ -142,6 +142,7 @@ type Config struct {
 		ShotgunCount   int    `default:"100" envconfig:"SHOTGUN_COUNT" json:"SHOTGUN_COUNT"`
 		MaxRetries     int    `default:"25" envconfig:"NODE_MAX_RETRIES" json:"NODE_MAX_RETRIES"`
 		RetryDelay     int    `default:"5000" envconfig:"NODE_RETRY_DELAY" json:"NODE_RETRY_DELAY"`
+		RequestMempool bool   `default:"true" envconfig:"REQUEST_MEMPOOL" json:"REQUEST_MEMPOOL"`
 	}
 	RpcNode struct {
 		Host       string `envconfig:"RPC_HOST" json:"RPC_HOST"`

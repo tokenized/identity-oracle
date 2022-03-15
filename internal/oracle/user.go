@@ -59,12 +59,15 @@ func FetchUser(ctx context.Context, dbConn *db.DB, id string) (*User, error) {
 
 	user := &User{}
 	if err := dbConn.Get(ctx, user, sql, id); err != nil {
+		if errors.Cause(err) == db.ErrNotFound {
+			return nil, errors.Wrap(ErrUserNotFound, id)
+		}
 		return nil, err
 	}
 	return user, nil
 }
 
-func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKeys) (*User, error) {
+func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpubs bitcoin.ExtendedKeys) (*User, error) {
 	sql := `SELECT ` + UserColumns + `
 		FROM
 			users u,
@@ -75,9 +78,9 @@ func FetchUserByXPub(ctx context.Context, dbConn *db.DB, xpub bitcoin.ExtendedKe
 			AND u.is_deleted=false`
 
 	user := &User{}
-	if err := dbConn.Get(ctx, user, sql, xpub); err != nil {
+	if err := dbConn.Get(ctx, user, sql, xpubs); err != nil {
 		if errors.Cause(err) == db.ErrNotFound {
-			err = ErrXPubNotFound
+			return nil, errors.Wrap(ErrXPubNotFound, xpubs.String())
 		}
 		return nil, err
 	}

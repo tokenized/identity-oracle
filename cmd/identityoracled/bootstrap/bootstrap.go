@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/tokenized/identity-oracle/cmd/identityoracled/handlers"
+	"github.com/tokenized/identity-oracle/internal/mid"
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
@@ -26,7 +27,7 @@ type Oracle struct {
 	db       *db.DB
 }
 
-func Setup(ctx context.Context, cfg *Config, spyNode client.Client,
+func Setup(ctx context.Context, logConfig logger.Config, cfg *Config, spyNode client.Client,
 	approver oracle.ApproverInterface) (*Oracle, error) {
 
 	// ---------------------------------------------------------------------------------------------
@@ -88,6 +89,9 @@ func Setup(ctx context.Context, cfg *Config, spyNode client.Client,
 	webHandler := handlers.API(ctx, webConfig, masterDB, key, ra, listener, listener,
 		cfg.Oracle.TransferExpirationDurationSeconds, cfg.Oracle.IdentityExpirationDurationSeconds,
 		approver)
+
+	requestLogger := mid.NewRequestLoggingMiddleware(logConfig)
+	webHandler = requestLogger.Handler(webHandler)
 
 	api := &http.Server{
 		Addr:           cfg.Web.APIHost,

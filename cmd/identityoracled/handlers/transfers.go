@@ -27,17 +27,17 @@ type Transfers struct {
 }
 
 // TransferSignature returns an approve/deny signature for a transfer receiver.
-func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+func (t *Transfers) TransferSignature(ctx context.Context, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Transfers.TransferSignature")
 	defer span.End()
 
 	var requestData struct {
-		XPubs    bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
-		Index    uint32               `json:"index"`
-		Contract string               `json:"contract" validate:"required"`
-		AssetID  string               `json:"asset_id" validate:"required"`
+		XPubs        bitcoin.ExtendedKeys `json:"xpubs" validate:"required"`
+		Index        uint32               `json:"index"`
+		Contract     string               `json:"contract" validate:"required"`
+		InstrumentID string               `json:"instrument_id" validate:"required"`
 	}
 
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
@@ -46,20 +46,21 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 
 	for _, xpub := range requestData.XPubs {
 		if xpub.IsPrivate() {
-			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			web.Respond(ctx, w, "private keys not allowed", http.StatusUnprocessableEntity)
 			return nil
 		}
 	}
+
+	logger.InfoWithFields(ctx, []logger.Field{
+		logger.Stringer("xpubs", requestData.XPubs),
+		logger.Uint32("index", requestData.Index),
+	}, "Creating transfer certificate")
 
 	dbConn := t.MasterDB.Copy()
 	defer dbConn.Close()
 
 	user, err := oracle.FetchUserByXPub(ctx, dbConn, requestData.XPubs)
 	if err != nil {
-		if errors.Cause(err) == oracle.ErrXPubNotFound {
-			web.RespondError(ctx, log, w, err, http.StatusNotFound)
-			return nil
-		}
 		return translate(errors.Wrap(err, "fetch user"))
 	}
 
@@ -68,7 +69,7 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	if t.Approver != nil {
 		var approveErr error
 		approved, description, approveErr = t.Approver.ApproveTransfer(ctx, requestData.Contract,
-			requestData.AssetID, user.ID)
+			requestData.InstrumentID, user.ID)
 		if approveErr != nil {
 			return translate(errors.Wrap(err, "approve transfer"))
 		}
@@ -77,15 +78,15 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 	expiration := uint64(time.Now().Add(time.Duration(t.TransferExpirationDurationSeconds) *
 		time.Second).UnixNano())
 
-	// Check that xpub is in DB. Check that entity associated xpub meets criteria for asset.
+	// Check that xpub is in DB. Check that entity associated xpub meets criteria for instrument.
 	sigHash, height, blockHash, err := oracle.CreateReceiveSignature(ctx, dbConn, t.Headers,
-		requestData.Contract, requestData.AssetID, requestData.XPubs, requestData.Index, expiration,
-		approved)
+		t.Config.Net, requestData.Contract, requestData.InstrumentID, requestData.XPubs,
+		requestData.Index, expiration, approved)
 	if err != nil {
 		return translate(errors.Wrap(err, "create signature"))
 	}
 
-	sig, err := t.Key.Sign(sigHash[:])
+	sig, err := t.Key.Sign(*sigHash)
 	if err != nil {
 		return translate(errors.Wrap(err, "sign"))
 	}
@@ -108,6 +109,6 @@ func (t *Transfers) TransferSignature(ctx context.Context, log logger.Logger, w 
 		Expiration:   expiration,
 	}
 
-	web.RespondData(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, w, response, http.StatusOK)
 	return nil
 }

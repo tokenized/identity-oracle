@@ -14,7 +14,7 @@ post:
               type: number
             contract:
               type: string
-            asset_id:
+            instrument_id:
               type: string
 
   responses:

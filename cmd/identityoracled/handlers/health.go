@@ -6,7 +6,6 @@ import (
 
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-	"github.com/tokenized/pkg/logger"
 )
 
 // Health provides health checks.
@@ -15,7 +14,7 @@ type Health struct {
 }
 
 // Health just returns a 200 okay status.
-func (h *Health) Health(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+func (h *Health) Health(ctx context.Context, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 	var status struct {
 		Status string `json:"status"`
@@ -23,10 +22,10 @@ func (h *Health) Health(ctx context.Context, log logger.Logger, w http.ResponseW
 
 	if err := checkDB(ctx, h.MasterDB); err != nil {
 		status.Status = err.Error()
-		web.Respond(ctx, log, w, status, http.StatusInternalServerError)
+		web.Respond(ctx, w, status, http.StatusInternalServerError)
 	}
 
-	web.Respond(ctx, log, w, nil, http.StatusOK)
+	web.Respond(ctx, w, nil, http.StatusOK)
 	return nil
 }
 

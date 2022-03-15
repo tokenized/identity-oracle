@@ -51,7 +51,7 @@ func VerifyPubKey(ctx context.Context, user *User, headers Headers,
 	}
 
 	return &SignatureHash{
-		Hash:        hash,
+		Hash:        *hash,
 		BlockHeight: height,
 		Approved:    approved,
 		Description: description,
@@ -88,7 +88,7 @@ func VerifyXPub(ctx context.Context, user *User, headers Headers,
 	}
 
 	return &SignatureHash{
-		Hash:        hash,
+		Hash:        *hash,
 		BlockHeight: height,
 		Approved:    approved,
 		Description: description,
@@ -132,8 +132,9 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net 
 		return nil, errors.Wrap(err, "get sig block hash")
 	}
 
-	logger.Info(ctx, "Admin Address : %s",
-		bitcoin.NewAddressFromRawAddress(adminAddress, net))
+	fields := []logger.Field{
+		logger.Stringer("admin_address", bitcoin.NewAddressFromRawAddress(adminAddress, net)),
+	}
 
 	approved := true
 	approve := uint8(1)
@@ -143,11 +144,11 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net 
 	if entityContract.IsEmpty() {
 		entity = &issuer // Must be a pointer
 		checkEntity = &issuer
-		logger.Info(ctx, "Issuer : %+v", issuer)
+		fields = append(fields, logger.JSON("issuer", &issuer))
 	} else {
 		entity = entityContract
-		logger.Info(ctx, "Entity Contract : %s",
-			bitcoin.NewAddressFromRawAddress(entityContract, net))
+		fields = append(fields, logger.Stringer("entity_contract",
+			bitcoin.NewAddressFromRawAddress(entityContract, net)))
 
 		// Verify the contract belongs to the user.
 		cf, err := contracts.GetContractFormation(ctx, entityContract)
@@ -165,9 +166,9 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net 
 		approve = 0
 	}
 
-	logger.Info(ctx, "Block Hash : %s", blockHash)
-	logger.Info(ctx, "Expiration : %d", expiration)
-	logger.Info(ctx, "Approved : %d", approve)
+	fields = append(fields, logger.Stringer("block_hash", blockHash))
+	fields = append(fields, logger.Uint64("expiration", expiration))
+	fields = append(fields, logger.Uint8("approved", approve))
 
 	hash, err := protocol.ContractAdminIdentityOracleSigHash(ctx, adminAddress, entity, *blockHash,
 		expiration, approve)
@@ -175,10 +176,12 @@ func CreateAdminCertificate(ctx context.Context, dbConn *db.DB, user *User, net 
 		return nil, errors.Wrap(err, "generate sig hash")
 	}
 
-	logger.Info(ctx, "Sig Hash : %x", hash)
+	fields = append(fields, logger.Stringer("sig_hash", hash))
+
+	logger.InfoWithFields(ctx, fields, "Admin certificate")
 
 	return &SignatureHash{
-		Hash:        hash,
+		Hash:        *hash,
 		BlockHeight: height,
 		Approved:    approved,
 		Description: description,

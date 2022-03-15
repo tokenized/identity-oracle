@@ -39,6 +39,6 @@ type ApproverInterface interface {
 	//   error - error
 	// An error aborts the process and returns an error to the user. If error is nil then a
 	// signature will be returned to the user, though it won't indicate approval unless specified.
-	ApproveTransfer(ctx context.Context, contract, assetID string,
+	ApproveTransfer(ctx context.Context, contract, instrumentID string,
 		userID string) (bool, string, error)
 }

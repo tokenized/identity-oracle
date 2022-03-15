@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -54,7 +55,7 @@ func NewListener(spyNode client.Client, dbConn *db.DB, net bitcoin.Network, isTe
 		dbConn:  dbConn,
 		net:     net,
 		isTest:  isTest,
-		offset:  4,
+		offset:  5, // tip + 4 previous
 	}
 }
 
@@ -62,11 +63,11 @@ func (l *Listener) RecentSigHash(ctx context.Context) (*bitcoin.Hash32, uint32, 
 	l.hashesLock.Lock()
 	defer l.hashesLock.Unlock()
 
-	if len(l.hashes) < l.offset {
-		return nil, 0, errors.New("Not enough headers")
+	if len(l.hashes) != l.offset {
+		return nil, 0, fmt.Errorf("bad header count : got %d, want %d", len(l.hashes), l.offset)
 	}
 
-	return &l.hashes[len(l.hashes)-l.offset-1], l.height - uint32(l.offset), nil
+	return &l.hashes[0], l.height - uint32(l.offset) + 1, nil
 }
 
 func (l *Listener) GetContractFormation(ctx context.Context,
@@ -90,7 +91,6 @@ func (l *Listener) GetContractFormation(ctx context.Context,
 	}
 
 	return result, nil
-
 }
 
 func (l *Listener) HandleTx(ctx context.Context, tx *client.Tx) {
@@ -100,13 +100,13 @@ func (l *Listener) HandleTx(ctx context.Context, tx *client.Tx) {
 	}
 
 	// Address of first input
-	ra, err := bitcoin.RawAddressFromLockingScript(tx.Outputs[0].PkScript)
+	ra, err := bitcoin.RawAddressFromLockingScript(tx.Outputs[0].LockingScript)
 	if err != nil || ra.IsEmpty() {
 		return
 	}
 
 	for _, output := range tx.Tx.TxOut {
-		action, err := protocol.Deserialize(output.PkScript, l.isTest)
+		action, err := protocol.Deserialize(output.LockingScript, l.isTest)
 		if err != nil {
 			continue
 		}
@@ -116,7 +116,7 @@ func (l *Listener) HandleTx(ctx context.Context, tx *client.Tx) {
 			continue
 		}
 
-		if err := l.SaveContractFormation(ctx, ra, formation, output.PkScript); err != nil {
+		if err := l.SaveContractFormation(ctx, ra, formation, output.LockingScript); err != nil {
 			logger.Error(ctx, "Failed to save contract formation : %s", err)
 		}
 	}
@@ -134,49 +134,53 @@ func (l *Listener) HandleHeaders(ctx context.Context, headers *client.Headers) {
 		headers.Headers[count-1].BlockHash())
 
 	l.hashesLock.Lock()
-	defer l.hashesLock.Unlock()
 
-	l.height = newHeight
+	// Append any matching
+	latest := l.hashes[len(l.hashes)-1]
+	appendedCount := 0
+	for _, header := range headers.Headers {
+		if header.PrevBlock.Equal(&latest) {
+			// Add as new latest
+			latest = *header.BlockHash()
+			l.hashes = append(l.hashes, latest)
+			l.height++
+			appendedCount++
+			continue
+		}
 
-	currentCount := len(l.hashes)
-	if currentCount > 0 {
-		last := l.hashes[currentCount-1]
-		if !headers.Headers[0].PrevBlock.Equal(&last) {
-			// not consecutive headers so dump current headers
-			logger.Info(ctx, "Not next header : current latest %s, new previous %s", last,
-				headers.Headers[0].PrevBlock)
-			l.hashes = nil
-			currentCount = 0
+		// Check for earlier match
+		for i, hash := range l.hashes {
+			if header.PrevBlock.Equal(&hash) {
+				// Drop hashes after this and replace with new branch
+				removeCount := len(l.hashes) - (i + 1)
+				logger.Info(ctx, "Reorging out %d headers to %s", removeCount, hash)
+				l.height -= uint32(removeCount)
+				l.hashes = l.hashes[:i]
+
+				// Add as new latest
+				latest = *header.BlockHash()
+				l.hashes = append(l.hashes, latest)
+				l.height++
+				appendedCount++
+				break
+			}
 		}
 	}
 
-	if currentCount == 0 || count >= l.offset {
-		// Either no current headers or the new set of headers is longer than we need so overwrite
-		// with the current set.
+	l.hashesLock.Unlock()
 
-		if count > l.offset {
-			// Only keep the last "offset" count
-			headers.Headers = headers.Headers[count-l.offset-1:]
+	if appendedCount == 0 {
+		// No link to current hashes. Something must have gone wrong so just rebuild.
+		logger.Info(ctx, "No link to new headers. Reinitializing")
+		if err := l.InitializeHeaders(ctx); err != nil {
+			logger.Error(ctx, "Failed to reinitialize hashes : %s", err)
 		}
-
-		l.hashes = make([]bitcoin.Hash32, len(headers.Headers))
-		for i, header := range headers.Headers {
-			l.hashes[i] = *header.BlockHash()
-		}
-
 		return
 	}
 
-	newLength := currentCount + count
-	if newLength > l.offset {
-		// Trim oldest current headers
-		trimCount := newLength - l.offset
-		l.hashes = l.hashes[trimCount:]
-	}
-
-	// Append new headers
-	for _, header := range headers.Headers {
-		l.hashes = append(l.hashes, *header.BlockHash())
+	logger.Info(ctx, "Appended %d headers", appendedCount)
+	if err := l.cleanHashes(ctx); err != nil {
+		logger.Error(ctx, "Failed to clean hashes : %s", err)
 	}
 }
 
@@ -234,7 +238,37 @@ func (l *Listener) HandleMessage(ctx context.Context, payload client.MessagePayl
 	}
 }
 
+func (l *Listener) cleanHashes(ctx context.Context) error {
+	l.hashesLock.Lock()
+
+	// Check if too many hashes and trim oldest
+	currentCount := len(l.hashes)
+	if currentCount > l.offset {
+		trimCount := currentCount - l.offset
+		l.hashes = l.hashes[trimCount:]
+		currentCount = l.offset
+		l.hashesLock.Unlock()
+		return nil
+	}
+
+	l.hashesLock.Unlock()
+
+	// Check if not enough hashes and request new.
+	if currentCount < l.offset {
+		logger.Info(ctx, "Reinitializing headers")
+		if err := l.InitializeHeaders(ctx); err != nil {
+			return errors.Wrap(err, "initialize headers")
+		}
+	}
+
+	return nil
+}
+
 func (l *Listener) InitializeHeaders(ctx context.Context) error {
+	if l.spyNode == nil {
+		return errors.New("No spynode to initialize headers")
+	}
+
 	headers, err := l.spyNode.GetHeaders(ctx, -1, l.offset)
 	if err != nil {
 		return errors.Wrap(err, "get headers")

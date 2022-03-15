@@ -30,8 +30,8 @@ type Oracle struct {
 }
 
 // Identity returns identity information about the oracle.
-func (o *Oracle) Identity(ctx context.Context, log logger.Logger, w http.ResponseWriter,
-	r *http.Request, params map[string]string) error {
+func (o *Oracle) Identity(ctx context.Context, w http.ResponseWriter, r *http.Request,
+	params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.Identity")
 	defer span.End()
@@ -44,13 +44,13 @@ func (o *Oracle) Identity(ctx context.Context, log logger.Logger, w http.Respons
 		PublicKey:       o.Key.PublicKey(),
 	}
 
-	web.RespondData(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, w, response, http.StatusOK)
 	return nil
 }
 
 // Register adds a new user to the system
-func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.ResponseWriter,
-	r *http.Request, params map[string]string) error {
+func (o *Oracle) Register(ctx context.Context, w http.ResponseWriter, r *http.Request,
+	params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.Register")
 	defer span.End()
@@ -65,6 +65,10 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
+	logger.InfoWithFields(ctx, []logger.Field{
+		logger.Stringer("public_key", requestData.PublicKey),
+	}, "Creating user")
+
 	// Verify signature is valid for user's public key
 	s := sha256.New()
 	if err := requestData.Entity.WriteDeterministic(s); err != nil {
@@ -72,9 +76,8 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	if !requestData.Signature.Verify(hash[:], requestData.PublicKey) {
-		web.Respond(ctx, log, w, nil, http.StatusUnauthorized)
-		return nil
+	if !requestData.Signature.Verify(hash, requestData.PublicKey) {
+		return translate(oracle.ErrInvalidSignature)
 	}
 
 	entityBytes, err := proto.Marshal(&requestData.Entity)
@@ -94,7 +97,7 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 			}{
 				Status: description,
 			}
-			web.Respond(ctx, log, w, response, http.StatusForbidden)
+			web.Respond(ctx, w, response, http.StatusForbidden)
 			return nil
 		}
 	}
@@ -112,6 +115,8 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 		IsDeleted:    false,
 	}
 
+	logger.Info(ctx, "Created user : %s", userID)
+
 	if err := oracle.CreateUser(ctx, dbConn, user); err != nil {
 		return translate(errors.Wrap(err, "create user"))
 	}
@@ -124,13 +129,13 @@ func (o *Oracle) Register(ctx context.Context, log logger.Logger, w http.Respons
 		UserID: user.ID,
 	}
 
-	web.RespondData(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, w, response, http.StatusOK)
 	return nil
 }
 
 // AddXPub adds a new xpub to the system.
-func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.ResponseWriter,
-	r *http.Request, params map[string]string) error {
+func (o *Oracle) AddXPub(ctx context.Context, w http.ResponseWriter, r *http.Request,
+	params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.AddXPub")
 	defer span.End()
@@ -148,10 +153,15 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 
 	for _, xpub := range requestData.XPubs {
 		if xpub.IsPrivate() {
-			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			web.Respond(ctx, w, "private keys not allowed", http.StatusUnprocessableEntity)
 			return nil
 		}
 	}
+
+	logger.InfoWithFields(ctx, []logger.Field{
+		logger.String("user_id", requestData.UserID),
+		logger.Stringer("xpubs", requestData.XPubs),
+	}, "Adding xpub")
 
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
@@ -159,9 +169,6 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 	// Fetch User
 	user, err := oracle.FetchUser(ctx, dbConn, requestData.UserID)
 	if err != nil {
-		if err == db.ErrNotFound {
-			return web.ErrNotFound // User doesn't exist
-		}
 		return translate(errors.Wrap(err, "fetch user"))
 	}
 
@@ -179,8 +186,8 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	if !requestData.Signature.Verify(hash[:], user.PublicKey) {
-		return translate(errors.Wrap(err, "validate sig"))
+	if !requestData.Signature.Verify(hash, user.PublicKey) {
+		return translate(oracle.ErrInvalidSignature)
 	}
 
 	xpub := &oracle.XPub{
@@ -195,12 +202,14 @@ func (o *Oracle) AddXPub(ctx context.Context, log logger.Logger, w http.Response
 		return translate(errors.Wrap(err, "create xpub"))
 	}
 
-	web.Respond(ctx, log, w, nil, http.StatusOK)
+	logger.Info(ctx, "Created xpub")
+
+	web.Respond(ctx, w, nil, http.StatusOK)
 	return nil
 }
 
 // User returns the user id associated with an xpub.
-func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+func (o *Oracle) User(ctx context.Context, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.User")
@@ -214,9 +223,13 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
 
+	logger.InfoWithFields(ctx, []logger.Field{
+		logger.Stringer("xpubs", requestData.XPubs),
+	}, "Finding user")
+
 	for _, xpub := range requestData.XPubs {
 		if xpub.IsPrivate() {
-			web.Respond(ctx, log, w, "private keys not allowed", http.StatusUnprocessableEntity)
+			web.Respond(ctx, w, "private keys not allowed", http.StatusUnprocessableEntity)
 			return nil
 		}
 	}
@@ -227,9 +240,6 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 	// Check user ID
 	userID, err := oracle.FetchUserIDByXPub(ctx, dbConn, requestData.XPubs)
 	if err != nil {
-		if err == oracle.ErrXPubNotFound {
-			return web.ErrNotFound // XPub doesn't exist
-		}
 		return translate(errors.Wrap(err, "fetch user"))
 	}
 
@@ -239,12 +249,12 @@ func (o *Oracle) User(ctx context.Context, log logger.Logger, w http.ResponseWri
 		UserID: *userID,
 	}
 
-	web.RespondData(ctx, log, w, response, http.StatusOK)
+	web.RespondData(ctx, w, response, http.StatusOK)
 	return nil
 }
 
 // UpdateIdentity updates the users identity information.
-func (o *Oracle) UpdateIdentity(ctx context.Context, log logger.Logger, w http.ResponseWriter,
+func (o *Oracle) UpdateIdentity(ctx context.Context, w http.ResponseWriter,
 	r *http.Request, params map[string]string) error {
 
 	ctx, span := trace.StartSpan(ctx, "handlers.Oracle.UpdateIdentity")
@@ -259,6 +269,10 @@ func (o *Oracle) UpdateIdentity(ctx context.Context, log logger.Logger, w http.R
 	if err := web.Unmarshal(r.Body, &requestData); err != nil {
 		return translate(errors.Wrap(err, "unmarshal request"))
 	}
+
+	logger.InfoWithFields(ctx, []logger.Field{
+		logger.String("user_id", requestData.UserID),
+	}, "Updating identity")
 
 	dbConn := o.MasterDB.Copy()
 	defer dbConn.Close()
@@ -286,9 +300,8 @@ func (o *Oracle) UpdateIdentity(ctx context.Context, log logger.Logger, w http.R
 	}
 	hash := sha256.Sum256(s.Sum(nil))
 
-	if !requestData.Signature.Verify(hash[:], user.PublicKey) {
-		web.Respond(ctx, log, w, nil, http.StatusUnauthorized)
-		return nil
+	if !requestData.Signature.Verify(hash, user.PublicKey) {
+		return translate(oracle.ErrInvalidSignature)
 	}
 
 	if o.Approver != nil {
@@ -301,7 +314,7 @@ func (o *Oracle) UpdateIdentity(ctx context.Context, log logger.Logger, w http.R
 			}{
 				Status: description,
 			}
-			web.Respond(ctx, log, w, response, http.StatusForbidden)
+			web.Respond(ctx, w, response, http.StatusForbidden)
 			return nil
 		}
 	}
@@ -317,6 +330,6 @@ func (o *Oracle) UpdateIdentity(ctx context.Context, log logger.Logger, w http.R
 		return translate(errors.Wrap(err, "update user"))
 	}
 
-	web.Respond(ctx, log, w, nil, http.StatusOK)
+	web.Respond(ctx, w, nil, http.StatusOK)
 	return nil
 }
