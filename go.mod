@@ -11,7 +11,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/tokenized/config v0.1.0
 	github.com/tokenized/pkg v0.4.0
-	github.com/tokenized/specification v1.1.0
+	github.com/tokenized/specification v1.1.1
 	github.com/tokenized/spynode v0.2.0
 	go.opencensus.io v0.22.2
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
