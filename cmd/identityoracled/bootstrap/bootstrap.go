@@ -3,18 +3,17 @@ package bootstrap
 import (
 	"context"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
+	"sync"
 
 	"github.com/tokenized/identity-oracle/cmd/identityoracled/handlers"
 	"github.com/tokenized/identity-oracle/internal/mid"
 	"github.com/tokenized/identity-oracle/internal/oracle"
 	"github.com/tokenized/identity-oracle/internal/platform/db"
 	"github.com/tokenized/identity-oracle/internal/platform/web"
+	"github.com/tokenized/logger"
 	"github.com/tokenized/pkg/bitcoin"
-	"github.com/tokenized/pkg/logger"
 	"github.com/tokenized/spynode/pkg/client"
+	"github.com/tokenized/threads"
 
 	"github.com/pkg/errors"
 )
@@ -110,60 +109,32 @@ func Setup(ctx context.Context, logConfig logger.Config, cfg *Config, spyNode cl
 	}, nil
 }
 
-func (o *Oracle) Run(ctx context.Context, spyNodeErrors *chan error) error {
+func (o *Oracle) Run(ctx context.Context, interrupt <-chan interface{}) error {
 	defer o.db.Close()
 
-	// Make a channel to listen for errors coming from the listener. Use a
-	// buffered channel so the goroutine can exit if we don't collect this error.
-	serverErrors := make(chan error, 1)
+	var wait sync.WaitGroup
 
-	// Start the service listening for requests.
-	go func() {
-		logger.Info(ctx, "main : HTTP server Listening %s", o.cfg.Web.APIHost)
-		result := o.server.ListenAndServe()
-		if result != nil { // If there is no error, then it was requested closed by an interrupt
-			logger.Info(ctx, "main : HTTP server finished : %s", result)
-		} else {
-			logger.Info(ctx, "main : HTTP server finished")
-		}
-		serverErrors <- result
-	}()
+	listenThread, listenComplete := threads.NewUninterruptableThreadComplete("Listen HTTP",
+		func(ctx context.Context) error {
+			return o.server.ListenAndServe()
+		}, &wait)
 
-	// ---------------------------------------------------------------------------------------------
-	// Shutdown
-
-	// Make a channel to listen for an interrupt or terminate signal from the OS.
-	// Use a buffered channel because the signal package requires it.
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
+	listenThread.Start(ctx)
 
 	// ---------------------------------------------------------------------------------------------
 	// Stop API Service
 
 	// Blocking main and waiting for shutdown.
+	listenStopped := false
 	select {
-	case err := <-*spyNodeErrors:
-		if err != nil {
-			logger.Error(ctx, "main : Spynode failed : %s", err)
-		}
+	case err := <-listenComplete:
+		logger.Error(ctx, "main : Server completed : %s", err)
+		listenStopped = true
 
-		// Asking listener to shutdown and load shed.
-		if err := o.server.Shutdown(ctx); err != nil {
-			logger.Info(ctx, "main : Graceful HTTP server shutdown did not complete in %v : %v",
-				o.cfg.Web.ShutdownTimeout, err)
-			if err := o.server.Close(); err != nil {
-				logger.Error(ctx, "main : Could not stop HTTP server: %v", err)
-			}
-		}
+	case <-interrupt:
+	}
 
-	case err := <-serverErrors:
-		if err != nil {
-			logger.Error(ctx, "main : Server failed : %s", err)
-		}
-
-	case <-osSignals:
-		logger.Info(ctx, "main : Start shutdown...")
-
+	if !listenStopped {
 		// Create context for Shutdown call.
 		ctx, cancel := context.WithTimeout(context.Background(), o.cfg.Web.ShutdownTimeout)
 		defer cancel()
@@ -176,6 +147,12 @@ func (o *Oracle) Run(ctx context.Context, spyNodeErrors *chan error) error {
 				return errors.Wrap(err, "close server")
 			}
 		}
+	}
+
+	wait.Wait()
+
+	if err := o.Save(ctx); err != nil {
+		return errors.Wrap(err, "save")
 	}
 
 	return nil

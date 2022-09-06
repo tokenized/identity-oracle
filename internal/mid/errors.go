@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 
 	"github.com/tokenized/identity-oracle/internal/platform/web"
-	"github.com/tokenized/pkg/logger"
+	"github.com/tokenized/logger"
 
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"

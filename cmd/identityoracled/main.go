@@ -3,20 +3,22 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/tokenized/config"
 	"github.com/tokenized/identity-oracle/cmd/identityoracled/bootstrap"
+	"github.com/tokenized/logger"
 	"github.com/tokenized/pkg/bitcoin"
-	"github.com/tokenized/pkg/logger"
 	"github.com/tokenized/pkg/rpcnode"
 	"github.com/tokenized/pkg/storage"
 	spynodeBootstrap "github.com/tokenized/spynode/cmd/spynoded/bootstrap"
+	"github.com/tokenized/threads"
 )
 
 func main() {
-
 	// ---------------------------------------------------------------------------------------------
 	// Logging
 
@@ -87,45 +89,39 @@ func main() {
 
 	spyNode := spynodeBootstrap.NewNode(spyConfig, spyStorage, rpcNode, rpcNode)
 
-	spyNodeErrors := make(chan error, 1)
-
 	server, err := bootstrap.Setup(ctx, logConfig, &cfg.Oracle, spyNode, nil)
 	if err != nil {
 		logger.Fatal(ctx, "Failed to setup server : %s", err)
 	}
 
 	// Start the service listening for requests.
-	oracleWait := &sync.WaitGroup{}
+	var wait sync.WaitGroup
+	oracleThread, oracleComplete := threads.NewInterruptableThreadComplete("Oracle", server.Run,
+		&wait)
 
-	oracleWait.Add(1)
-	go func() {
-		logger.Info(ctx, "Oracle Running")
-		server.Run(ctx, &spyNodeErrors)
-		logger.Info(ctx, "Oracle Finished")
-		oracleWait.Done()
-	}()
+	spyNodeThread, spyNodeComplete := threads.NewUninterruptableThreadComplete("SpyNode",
+		spyNode.Run, &wait)
 
-	spynodeWait := &sync.WaitGroup{}
+	osSignals := make(chan os.Signal, 1)
+	signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
 
-	spynodeWait.Add(1)
-	go func() {
-		logger.Info(ctx, "SpyNode Running")
-		spyNodeErrors <- spyNode.Run(ctx)
-		logger.Info(ctx, "SpyNode Finished")
-		spynodeWait.Done()
-	}()
+	oracleThread.Start(ctx)
+	spyNodeThread.Start(ctx)
 
-	oracleWait.Wait()
+	select {
+	case err := <-oracleComplete:
+		logger.Error(ctx, "Oracle completed : %s", err)
 
-	if err := spyNode.Stop(ctx); err != nil {
-		logger.Error(ctx, "Could not stop spynode: %s", err)
+	case err := <-spyNodeComplete:
+		logger.Error(ctx, "SpyNode completed : %s", err)
+
+	case <-osSignals:
+		logger.Info(ctx, "Shutdown requested")
 	}
 
-	if err := server.Save(ctx); err != nil {
-		logger.Error(ctx, "Failed to save server : %s", err)
-	}
-
-	spynodeWait.Wait()
+	oracleThread.Stop(ctx)
+	spyNode.Stop(ctx)
+	wait.Wait()
 }
 
 type Config struct {

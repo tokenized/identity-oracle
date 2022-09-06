@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tokenized/pkg/logger"
+	"github.com/tokenized/logger"
 
 	"github.com/google/uuid"
 )
