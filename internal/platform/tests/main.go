@@ -9,6 +9,7 @@ import (
 	"github.com/tokenized/identity-oracle/internal/platform/web"
 	"github.com/tokenized/logger"
 	"github.com/tokenized/pkg/bitcoin"
+	"github.com/tokenized/pkg/storage"
 )
 
 // Success and failure markers.
@@ -48,7 +49,7 @@ func New() *Test {
 		logger.Fatal(ctx, "main : Register DB : %v", err)
 	}
 
-	mockStorage := newMockStorage()
+	mockStorage := storage.NewMockStorage()
 	masterDB.SetStorage(mockStorage)
 
 	// ============================================================
